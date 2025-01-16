@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Client } from '../entities/client.entity';
@@ -14,7 +14,9 @@ export class ClientsService {
     try {
       return await this.clientsRepository.save(clientData);
     } catch (error) {
-      throw new Error('Error registering client: ' + error.message);
+      throw new InternalServerErrorException(
+        'Error registering client: ' + error.message,
+      );
     }
   }
 
@@ -22,7 +24,9 @@ export class ClientsService {
     try {
       return await this.clientsRepository.find();
     } catch (error) {
-      throw new Error('Error listing clients: ' + error.message);
+      throw new InternalServerErrorException(
+        'Error listing clients: ' + error.message,
+      );
     }
   }
 
@@ -30,7 +34,9 @@ export class ClientsService {
     try {
       return await this.clientsRepository.findOne({ where: { id } });
     } catch (error) {
-      throw new Error('Error getting client: ' + error.message);
+      throw new InternalServerErrorException(
+        'Error getting client: ' + error.message,
+      );
     }
   }
 
@@ -38,7 +44,9 @@ export class ClientsService {
     try {
       return await this.clientsRepository.update(id, clientData);
     } catch (error) {
-      throw new Error('Error updating client: ' + error.message);
+      throw new InternalServerErrorException(
+        'Error updating client: ' + error.message,
+      );
     }
   }
 
@@ -46,7 +54,9 @@ export class ClientsService {
     try {
       return await this.clientsRepository.delete(id);
     } catch (error) {
-      throw new Error('Error deleting client: ' + error.message);
+      throw new InternalServerErrorException(
+        'Error deleting client: ' + error.message,
+      );
     }
   }
 }
