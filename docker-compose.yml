@@ -7,9 +7,9 @@ services:
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
       POSTGRES_DB: ${DATABASE_NAME}
     ports:
-      - '${DATABASE_PORT}:5432'
+      - '5434:5432'
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
     restart: always
 
   app:
@@ -21,7 +21,7 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV}
       - PORT=${PORT}
-      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_HOST=db
       - DATABASE_PORT=${DATABASE_PORT}
       - DATABASE_USER=${DATABASE_USER}
       - DATABASE_PASSWORD=${DATABASE_PASSWORD}
@@ -36,11 +36,6 @@ services:
       - .:/app
       - /app/node_modules
     restart: always
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "200k"
-        max-file: "10"
 
 volumes:
-  db_data:
+  pgdata:
