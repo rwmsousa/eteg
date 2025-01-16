@@ -1,21 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ClientsController } from '../../src/clients/clients.controller';
-import { ClientsService } from '../../src/clients/clients.service';
-import { Client } from '../../src/entities/client.entity';
+import { ClientsService } from '../../clients/clients.service';
+import { Client } from '../../entities/client.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import {
-  BadRequestException,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { InternalServerErrorException } from '@nestjs/common';
 
-describe('ClientsController', () => {
-  let clientsController: ClientsController;
+describe('ClientsService', () => {
   let clientsService: ClientsService;
+  let clientsRepository: Repository<Client>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [ClientsController],
       providers: [
         ClientsService,
         {
@@ -25,8 +20,10 @@ describe('ClientsController', () => {
       ],
     }).compile();
 
-    clientsController = module.get<ClientsController>(ClientsController);
     clientsService = module.get<ClientsService>(ClientsService);
+    clientsRepository = module.get<Repository<Client>>(
+      getRepositoryToken(Client),
+    );
   });
 
   describe('registerClient', () => {
@@ -39,24 +36,9 @@ describe('ClientsController', () => {
         color: 'blue',
         annotations: '',
       };
-      jest
-        .spyOn(clientsService, 'registerClient')
-        .mockResolvedValue(clientData);
+      jest.spyOn(clientsRepository, 'save').mockResolvedValue(clientData);
 
-      expect(await clientsController.registerClient(clientData)).toBe(
-        clientData,
-      );
-    });
-
-    it('should throw BadRequestException if required fields are missing', async () => {
-      const clientData: Partial<Client> = {
-        name: 'John Doe',
-        email: 'john@example.com',
-      };
-
-      await expect(
-        clientsController.registerClient(clientData as Client),
-      ).rejects.toThrow(BadRequestException);
+      expect(await clientsService.registerClient(clientData)).toBe(clientData);
     });
 
     it('should throw InternalServerErrorException if there is a database error', async () => {
@@ -69,12 +51,12 @@ describe('ClientsController', () => {
         annotations: '',
       };
       jest
-        .spyOn(clientsService, 'registerClient')
+        .spyOn(clientsRepository, 'save')
         .mockRejectedValue(new Error('Database error'));
 
-      await expect(
-        clientsController.registerClient(clientData),
-      ).rejects.toThrow(InternalServerErrorException);
+      await expect(clientsService.registerClient(clientData)).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 
@@ -90,9 +72,9 @@ describe('ClientsController', () => {
           annotations: '',
         },
       ];
-      jest.spyOn(clientsService, 'listClients').mockResolvedValue(result);
+      jest.spyOn(clientsRepository, 'find').mockResolvedValue(result);
 
-      expect(await clientsController.listClients()).toBe(result);
+      expect(await clientsService.listClients()).toBe(result);
     });
   });
 
@@ -106,9 +88,9 @@ describe('ClientsController', () => {
         color: 'blue',
         annotations: '',
       };
-      jest.spyOn(clientsService, 'getClient').mockResolvedValue(result);
+      jest.spyOn(clientsRepository, 'findOne').mockResolvedValue(result);
 
-      expect(await clientsController.getClient(1)).toBe(result);
+      expect(await clientsService.getClient(1)).toBe(result);
     });
   });
 
@@ -123,11 +105,9 @@ describe('ClientsController', () => {
         annotations: '',
       };
       const updateResult = { affected: 1, raw: {}, generatedMaps: [] };
-      jest
-        .spyOn(clientsService, 'updateClient')
-        .mockResolvedValue(updateResult);
+      jest.spyOn(clientsRepository, 'update').mockResolvedValue(updateResult);
 
-      expect(await clientsController.updateClient(1, clientData)).toEqual(
+      expect(await clientsService.updateClient(1, clientData)).toEqual(
         updateResult,
       );
     });
@@ -136,11 +116,9 @@ describe('ClientsController', () => {
   describe('deleteClient', () => {
     it('should delete a client', async () => {
       const deleteResult = { affected: 1, raw: {} };
-      jest
-        .spyOn(clientsService, 'deleteClient')
-        .mockResolvedValue(deleteResult);
+      jest.spyOn(clientsRepository, 'delete').mockResolvedValue(deleteResult);
 
-      expect(await clientsController.deleteClient(1)).toEqual(deleteResult);
+      expect(await clientsService.deleteClient(1)).toEqual(deleteResult);
     });
   });
 });
