@@ -4,8 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ClientsModule } from './clients/clients.module';
-import { AdminModule } from './admin/admin.module';
-import { MigrationsModule } from './migrations/migrations.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -24,8 +23,7 @@ import { MigrationsModule } from './migrations/migrations.module';
       autoLoadEntities: true,
     }),
     ClientsModule,
-    AdminModule,
-    MigrationsModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],
