@@ -4,6 +4,10 @@ import { ClientsService } from '../../src/clients/clients.service';
 import { Client } from '../../src/entities/client.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import {
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 
 describe('ClientsController', () => {
   let clientsController: ClientsController;
@@ -26,7 +30,7 @@ describe('ClientsController', () => {
   });
 
   describe('registerClient', () => {
-    it('should register a client', async () => {
+    it('should register a client with valid data', async () => {
       const clientData: Client = {
         id: 1,
         name: 'John Doe',
@@ -42,6 +46,35 @@ describe('ClientsController', () => {
       expect(await clientsController.registerClient(clientData)).toBe(
         clientData,
       );
+    });
+
+    it('should throw BadRequestException if required fields are missing', async () => {
+      const clientData: Partial<Client> = {
+        name: 'John Doe',
+        email: 'john@example.com',
+      };
+
+      await expect(
+        clientsController.registerClient(clientData as Client),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw InternalServerErrorException if there is a database error', async () => {
+      const clientData: Client = {
+        id: 1,
+        name: 'John Doe',
+        cpf: '12345678901',
+        email: 'john@example.com',
+        color: 'blue',
+        annotations: '',
+      };
+      jest
+        .spyOn(clientsService, 'registerClient')
+        .mockRejectedValue(new Error('Database error'));
+
+      await expect(
+        clientsController.registerClient(clientData),
+      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 

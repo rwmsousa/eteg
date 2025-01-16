@@ -3,6 +3,7 @@ import { ClientsService } from '../../src/clients/clients.service';
 import { Client } from '../../src/entities/client.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { InternalServerErrorException } from '@nestjs/common';
 
 describe('ClientsService', () => {
   let clientsService: ClientsService;
@@ -26,7 +27,7 @@ describe('ClientsService', () => {
   });
 
   describe('registerClient', () => {
-    it('should register a client', async () => {
+    it('should register a client with valid data', async () => {
       const clientData: Client = {
         id: 1,
         name: 'John Doe',
@@ -38,6 +39,24 @@ describe('ClientsService', () => {
       jest.spyOn(clientsRepository, 'save').mockResolvedValue(clientData);
 
       expect(await clientsService.registerClient(clientData)).toBe(clientData);
+    });
+
+    it('should throw InternalServerErrorException if there is a database error', async () => {
+      const clientData: Client = {
+        id: 1,
+        name: 'John Doe',
+        cpf: '12345678901',
+        email: 'john@example.com',
+        color: 'blue',
+        annotations: '',
+      };
+      jest
+        .spyOn(clientsRepository, 'save')
+        .mockRejectedValue(new Error('Database error'));
+
+      await expect(clientsService.registerClient(clientData)).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 
