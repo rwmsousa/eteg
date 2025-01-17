@@ -2,12 +2,19 @@ import {
   Injectable,
   UnauthorizedException,
   InternalServerErrorException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
+import { RegisterUserDto } from './dto/register-user.dto'; // Import the DTO
+
+export interface LoginData {
+  username: string;
+  password: string;
+}
 
 @Injectable()
 export class UserService {
@@ -16,11 +23,18 @@ export class UserService {
     private usersRepository: Repository<User>,
   ) {}
 
-  async login(loginData: any) {
+  async login(loginData: LoginData) {
     const { username, password } = loginData;
     const user = await this.usersRepository.findOne({ where: { username } });
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user) {
+      console.log('User not found');
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      console.log('Invalid password');
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -32,9 +46,20 @@ export class UserService {
     return { access_token: token };
   }
 
-  async registerUser(userData: User) {
+  async registerUser(userData: RegisterUserDto) {
     try {
-      return await this.usersRepository.save(userData);
+      if (!userData.username || !userData.password || !userData.email) {
+        throw new BadRequestException(
+          'Missing required fields: username, password, email',
+        );
+      }
+
+      const user = new User();
+      user.username = userData.username;
+      user.password = await bcrypt.hash(userData.password, 10);
+      user.email = userData.email;
+
+      return await this.usersRepository.save(user);
     } catch (error) {
       throw new InternalServerErrorException(
         'Error registering user: ' + error.message,

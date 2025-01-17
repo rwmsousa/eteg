@@ -13,22 +13,28 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from '../entities/user.entity';
+import { LoginData } from './user.service';
+import { RegisterUserDto } from './dto/register-user.dto'; // Import the DTO
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post('login')
-  async login(@Body() loginData: any) {
+  async login(@Body() loginData: LoginData) {
     try {
       if (!loginData.username || !loginData.password) {
         throw new BadRequestException(
           'Missing required fields: username, password',
         );
       }
-      return await this.userService.login(loginData);
+      const result = await this.userService.login(loginData);
+      return result;
     } catch (error) {
-      if (error instanceof UnauthorizedException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof UnauthorizedException
+      ) {
         throw error;
       }
       throw new InternalServerErrorException('Error logging in', error);
@@ -36,20 +42,24 @@ export class UserController {
   }
 
   @Post('register')
-  async registerUser(@Body() userData: User) {
+  async registerUser(@Body() userData: RegisterUserDto) {
+    if (!userData.username || !userData.password || !userData.email) {
+      throw new BadRequestException(
+        'Missing required fields: username, password, email',
+      );
+    }
+
     try {
-      if (!userData.username || !userData.password) {
-        throw new BadRequestException(
-          'Missing required fields: username, password',
-        );
-      }
       return await this.userService.registerUser(userData);
     } catch (error) {
+      if (error.code === 'ER_DUP_ENTRY') {
+        throw new BadRequestException('Username already exists');
+      }
       throw new InternalServerErrorException('Error registering user', error);
     }
   }
 
-  @Get('users')
+  @Get()
   async listUsers() {
     try {
       return await this.userService.listUsers();
@@ -58,7 +68,7 @@ export class UserController {
     }
   }
 
-  @Get('users/:id')
+  @Get(':id')
   async getUser(@Param('id') id: number) {
     try {
       const user = await this.userService.getUser(id);
@@ -67,11 +77,14 @@ export class UserController {
       }
       return user;
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       throw new InternalServerErrorException('Error getting user', error);
     }
   }
 
-  @Put('users/:id')
+  @Put(':id')
   async updateUser(@Param('id') id: number, @Body() userData: User) {
     try {
       const result = await this.userService.updateUser(id, userData);
@@ -80,11 +93,14 @@ export class UserController {
       }
       return result;
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       throw new InternalServerErrorException('Error updating user', error);
     }
   }
 
-  @Delete('users/:id')
+  @Delete(':id')
   async deleteUser(@Param('id') id: number) {
     try {
       const result = await this.userService.deleteUser(id);
@@ -93,6 +109,9 @@ export class UserController {
       }
       return result;
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       throw new InternalServerErrorException('Error deleting user', error);
     }
   }
