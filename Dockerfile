@@ -12,6 +12,9 @@ RUN apt-get update && apt-get install -y postgresql-client-15
 # Define o diretório de trabalho
 WORKDIR /app
 
+# Cria a pasta pgdata se não existir
+RUN mkdir -p /app/pgdata
+
 # Copia os arquivos de configuração
 COPY package*.json ./
 

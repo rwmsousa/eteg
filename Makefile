@@ -5,6 +5,7 @@ build:
 	docker build -t $(IMAGE_NAME) . --no-cache
 
 up:
+	@mkdir -p pgdata
 	docker-compose up -d
 
 down:
@@ -14,6 +15,7 @@ logs:
 	docker-compose logs -f app
 
 restart:
+	@mkdir -p pgdata
 	docker-compose down
 	docker-compose up -d --build
 	docker-compose logs -f app
