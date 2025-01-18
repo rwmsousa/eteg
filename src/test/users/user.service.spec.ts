@@ -3,7 +3,7 @@ import { UserService, LoginData } from '../../user/user.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../../entities/user.entity';
 import { Repository } from 'typeorm';
-import { RegisterUserDto } from '../../user/dto/register-user.dto'; // Import the DTO
+import { RegisterUserDto } from '../../user/dto/register-user.dto';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { BadRequestException } from '@nestjs/common';

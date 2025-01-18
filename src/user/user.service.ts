@@ -9,7 +9,7 @@ import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
-import { RegisterUserDto } from './dto/register-user.dto'; // Import the DTO
+import { RegisterUserDto } from './dto/register-user.dto';
 
 export interface LoginData {
   username: string;

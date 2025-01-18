@@ -14,7 +14,7 @@ import {
 import { UserService } from './user.service';
 import { User } from '../entities/user.entity';
 import { LoginData } from './user.service';
-import { RegisterUserDto } from './dto/register-user.dto'; // Import the DTO
+import { RegisterUserDto } from './dto/register-user.dto';
 
 @Controller('user')
 export class UserController {

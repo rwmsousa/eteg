@@ -3,7 +3,7 @@ import { UserController } from '../../user/user.controller';
 import { UserService } from '../../user/user.service';
 import { User } from '../../entities/user.entity';
 import { LoginData } from '../../user/user.service';
-import { RegisterUserDto } from '../../user/dto/register-user.dto'; // Import the DTO
+import { RegisterUserDto } from '../../user/dto/register-user.dto';
 import {
   BadRequestException,
   UnauthorizedException,
