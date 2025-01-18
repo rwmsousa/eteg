@@ -8,6 +8,12 @@ import { UserModule } from './user/user.module';
 import SeederModule from './seeder/seeder.module';
 import { AuthMiddleware } from './middleware/auth.middleware';
 import * as dotenv from 'dotenv';
+import { UserService } from './user/user.service';
+import { UserController } from './user/user.controller';
+import { ClientsService } from './clients/clients.service';
+import { ClientsController } from './clients/clients.controller';
+import { User } from './entities/user.entity';
+import { Client } from './entities/client.entity';
 
 dotenv.config();
 
@@ -32,14 +38,21 @@ dotenv.config();
     ClientsModule,
     UserModule,
     SeederModule,
+    TypeOrmModule.forFeature([User, Client]),
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, UserController, ClientsController],
+  providers: [AppService, UserService, ClientsService],
 })
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(AuthMiddleware)
-      .forRoutes({ path: 'user', method: RequestMethod.ALL });
+      .forRoutes(
+        { path: 'user/register', method: RequestMethod.POST },
+        { path: 'user', method: RequestMethod.GET },
+        { path: 'user/:id', method: RequestMethod.GET },
+        { path: 'user', method: RequestMethod.PUT },
+        { path: 'user', method: RequestMethod.DELETE },
+      );
   }
 }
