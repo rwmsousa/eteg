@@ -11,14 +11,14 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { ClientsService } from './clients.service';
-import { Client } from '../entities/client.entity';
+import { RegisterClientDto } from './dto/register-client.dto';
 
 @Controller('clients')
 export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
 
   @Post()
-  async registerClient(@Body() clientData: Client) {
+  async registerClient(@Body() clientData: RegisterClientDto) {
     if (!clientData.cpf || !clientData.name || !clientData.email) {
       throw new BadRequestException(
         'Missing required fields: cpf, name, email',
@@ -27,6 +27,9 @@ export class ClientsController {
     try {
       return await this.clientsService.registerClient(clientData);
     } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       throw new InternalServerErrorException('Error registering client', error);
     }
   }
@@ -49,19 +52,27 @@ export class ClientsController {
       }
       return client;
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new NotFoundException('Client not found');
+      }
       throw new InternalServerErrorException('Error getting client', error);
     }
   }
 
   @Put(':id')
-  async updateClient(@Param('id') id: number, @Body() clientData: Client) {
+  async updateClient(
+    @Param('id') id: number,
+    @Body() clientData: RegisterClientDto,
+  ) {
     try {
-      const result = await this.clientsService.updateClient(id, clientData);
-      if (result.affected === 0) {
+      return await this.clientsService.updateClient(id, clientData);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
         throw new NotFoundException('Client not found');
       }
-      return result;
-    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw new BadRequestException('CPF already in use');
+      }
       throw new InternalServerErrorException('Error updating client', error);
     }
   }
@@ -69,12 +80,12 @@ export class ClientsController {
   @Delete(':id')
   async deleteClient(@Param('id') id: number) {
     try {
-      const result = await this.clientsService.deleteClient(id);
-      if (result.affected === 0) {
+      await this.clientsService.deleteClient(id);
+      return { message: 'Client deleted successfully' };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
         throw new NotFoundException('Client not found');
       }
-      return result;
-    } catch (error) {
       throw new InternalServerErrorException('Error deleting client', error);
     }
   }

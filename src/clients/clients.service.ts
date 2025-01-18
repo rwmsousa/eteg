@@ -2,10 +2,12 @@ import {
   Injectable,
   InternalServerErrorException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Client } from '../entities/client.entity';
+import { RegisterClientDto } from './dto/register-client.dto';
 
 @Injectable()
 export class ClientsService {
@@ -14,7 +16,7 @@ export class ClientsService {
     private clientsRepository: Repository<Client>,
   ) {}
 
-  async registerClient(clientData: Client) {
+  async registerClient(clientData: RegisterClientDto) {
     try {
       const existingClientByCpf = await this.clientsRepository.findOne({
         where: { cpf: clientData.cpf },
@@ -25,7 +27,7 @@ export class ClientsService {
       return await this.clientsRepository.save(clientData);
     } catch (error) {
       if (error instanceof BadRequestException) {
-        throw new BadRequestException('Client already exists');
+        throw error;
       }
       throw new InternalServerErrorException(
         'Error registering client: ' + error.message,
@@ -45,28 +47,67 @@ export class ClientsService {
 
   async getClient(id: number) {
     try {
-      return await this.clientsRepository.findOne({ where: { id } });
+      const client = await this.clientsRepository.findOne({ where: { id } });
+      if (!client) {
+        throw new NotFoundException('Client not found');
+      }
+      return client;
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       throw new InternalServerErrorException(
         'Error getting client: ' + error.message,
       );
     }
   }
 
-  async updateClient(id: number, clientData: Client) {
+  async updateClient(
+    id: number,
+    clientData: RegisterClientDto,
+  ): Promise<Client> {
     try {
-      return await this.clientsRepository.update(id, clientData);
+      const existingClient = await this.clientsRepository.findOne({
+        where: { id },
+      });
+      if (!existingClient) {
+        throw new NotFoundException('Client not found');
+      }
+
+      if (clientData.cpf && clientData.cpf !== existingClient.cpf) {
+        const existingClientByCpf = await this.clientsRepository.findOne({
+          where: { cpf: clientData.cpf },
+        });
+        if (existingClientByCpf) {
+          throw new BadRequestException('CPF already in use');
+        }
+      }
+
+      const updatedClient = { ...existingClient, ...clientData };
+      return await this.clientsRepository.save(updatedClient);
     } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
       throw new InternalServerErrorException(
         'Error updating client: ' + error.message,
       );
     }
   }
 
-  async deleteClient(id: number) {
+  async deleteClient(id: number): Promise<void> {
     try {
-      return await this.clientsRepository.delete(id);
+      const result = await this.clientsRepository.delete(id);
+      if (result.affected === 0) {
+        throw new NotFoundException('Client not found');
+      }
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       throw new InternalServerErrorException(
         'Error deleting client: ' + error.message,
       );
