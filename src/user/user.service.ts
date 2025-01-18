@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -15,6 +16,7 @@ import { RegisterUserDto } from './dto/register-user.dto';
 export interface LoginData {
   email: string;
   password: string;
+  role?: string;
 }
 
 @Injectable()
@@ -37,10 +39,8 @@ export class UserService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload = { username: user.username, sub: user.id };
-    const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: '1h',
-    });
+    const payload = { username: user.username, sub: user.id, role: user.role };
+    const token = jwt.sign(payload, process.env.JWT_SECRET);
 
     return { access_token: token };
   }
@@ -64,6 +64,7 @@ export class UserService {
       user.username = userData.username;
       user.password = await bcrypt.hash(userData.password, 10);
       user.email = userData.email;
+      user.role = userData.role ?? 'user';
 
       return await this.usersRepository.save(user);
     } catch (error) {
@@ -86,8 +87,15 @@ export class UserService {
 
   async getUser(id: number) {
     try {
-      return await this.usersRepository.findOne({ where: { id } });
+      const user = await this.usersRepository.findOne({ where: { id } });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      return user;
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       throw new InternalServerErrorException(
         'Error getting user: ' + error.message,
       );
@@ -113,6 +121,9 @@ export class UserService {
       if (userData.password) {
         user.password = await bcrypt.hash(userData.password, 10);
       }
+      if (userData.role) {
+        user.role = userData.role;
+      }
 
       return await this.usersRepository.save(user);
     } catch (error) {
@@ -125,7 +136,11 @@ export class UserService {
     }
   }
 
-  async deleteUser(id: number) {
+  async deleteUser(id: number, currentUser: User) {
+    if (currentUser.role !== 'admin') {
+      throw new ForbiddenException('Only admins can delete users');
+    }
+
     try {
       return await this.usersRepository.delete(id);
     } catch (error) {
