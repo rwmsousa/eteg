@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ClientsModule } from './clients/clients.module';
 import { UserModule } from './user/user.module';
+import SeederModule from './seeder/seeder.module';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -29,6 +30,7 @@ dotenv.config();
     }),
     ClientsModule,
     UserModule,
+    SeederModule,
   ],
   controllers: [AppController],
   providers: [AppService],
