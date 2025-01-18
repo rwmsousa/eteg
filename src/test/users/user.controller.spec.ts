@@ -170,10 +170,12 @@ describe('UserController', () => {
     });
 
     it('should throw NotFoundException if user is not found', async () => {
-      jest.spyOn(userService, 'updateUser').mockRejectedValue(new NotFoundException('User not found'));
-      await expect(userController.updateUser({ email: 'test@example.com' })).rejects.toThrow(
-        NotFoundException,
-      );
+      jest
+        .spyOn(userService, 'updateUser')
+        .mockRejectedValue(new NotFoundException('User not found'));
+      await expect(
+        userController.updateUser({ email: 'test@example.com' }),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should update the user if found', async () => {

@@ -100,7 +100,9 @@ export class UserService {
     }
 
     try {
-      const user = await this.usersRepository.findOne({ where: { email: userData.email } });
+      const user = await this.usersRepository.findOne({
+        where: { email: userData.email },
+      });
       if (!user) {
         throw new NotFoundException('User not found');
       }
@@ -117,7 +119,9 @@ export class UserService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new InternalServerErrorException('Error updating user: ' + error.message);
+      throw new InternalServerErrorException(
+        'Error updating user: ' + error.message,
+      );
     }
   }
 

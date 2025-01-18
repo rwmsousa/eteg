@@ -95,16 +95,14 @@ describe('UserService', () => {
 
   describe('updateUser', () => {
     it('should throw BadRequestException if email is not provided', async () => {
-      await expect(service.updateUser({})).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.updateUser({})).rejects.toThrow(BadRequestException);
     });
 
     it('should throw NotFoundException if user is not found', async () => {
       jest.spyOn(repository, 'findOne').mockResolvedValue(null);
-      await expect(service.updateUser({ email: 'test@example.com' })).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.updateUser({ email: 'test@example.com' }),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should update the user if found', async () => {
