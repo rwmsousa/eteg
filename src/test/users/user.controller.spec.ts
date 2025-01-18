@@ -46,12 +46,12 @@ describe('UserController', () => {
       const result = { access_token: 'token' };
       jest.spyOn(userService, 'login').mockResolvedValue(result);
 
-      const loginData: LoginData = { username: 'test', password: 'test' };
+      const loginData: LoginData = { email: 'test', password: 'test' };
       expect(await userController.login(loginData)).toEqual(result);
     });
 
     it('should throw BadRequestException if missing credentials', async () => {
-      const loginData: LoginData = { username: '', password: '' };
+      const loginData: LoginData = { email: '', password: '' };
       await expect(userController.login(loginData)).rejects.toThrow(
         BadRequestException,
       );
@@ -62,7 +62,7 @@ describe('UserController', () => {
         .spyOn(userService, 'login')
         .mockRejectedValue(new UnauthorizedException('Unauthorized'));
 
-      const loginData: LoginData = { username: 'test', password: 'wrong' };
+      const loginData: LoginData = { email: 'test', password: 'wrong' };
       await expect(userController.login(loginData)).rejects.toThrow(
         UnauthorizedException,
       );
@@ -73,9 +73,9 @@ describe('UserController', () => {
         .spyOn(userService, 'login')
         .mockRejectedValue(new Error('Unexpected error'));
 
-      const loginData: LoginData = { username: 'test', password: 'test' };
+      const loginData: LoginData = { email: 'test', password: 'test' };
       await expect(userController.login(loginData)).rejects.toThrow(
-        'Error logging in',
+        InternalServerErrorException,
       );
     });
   });

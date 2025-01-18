@@ -23,19 +23,22 @@ export class UserController {
   @Post('login')
   async login(@Body() loginData: LoginData) {
     try {
-      if (!loginData.username || !loginData.password) {
+      if (!loginData.email || !loginData.password) {
         throw new BadRequestException(
-          'Missing required fields: username, password',
+          'Missing required fields: email, password',
         );
       }
       const result = await this.userService.login(loginData);
       return result;
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof UnauthorizedException
-      ) {
-        throw error;
+      if (error instanceof UnauthorizedException) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      if (error instanceof BadRequestException) {
+        throw new BadRequestException(
+          'Missing required fields: email, password',
+        );
       }
       throw new InternalServerErrorException('Error logging in', error);
     }
@@ -51,6 +54,9 @@ export class UserController {
     try {
       return await this.userService.registerUser(userData);
     } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw new BadRequestException('User already exists');
+      }
       throw new InternalServerErrorException('Error registering user', error);
     }
   }
@@ -74,7 +80,7 @@ export class UserController {
       return user;
     } catch (error) {
       if (error instanceof NotFoundException) {
-        throw error;
+        throw new NotFoundException('User not found');
       }
       throw new InternalServerErrorException('Error getting user', error);
     }
@@ -90,7 +96,7 @@ export class UserController {
       return result;
     } catch (error) {
       if (error instanceof NotFoundException) {
-        throw error;
+        throw new NotFoundException('User not found');
       }
       throw new InternalServerErrorException('Error updating user', error);
     }
@@ -106,7 +112,7 @@ export class UserController {
       return result;
     } catch (error) {
       if (error instanceof NotFoundException) {
-        throw error;
+        throw new NotFoundException('User not found');
       }
       throw new InternalServerErrorException('Error deleting user', error);
     }

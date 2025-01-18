@@ -41,7 +41,7 @@ describe('UserService', () => {
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
       jest.spyOn(jwt, 'sign').mockReturnValue('token' as never);
 
-      const loginData: LoginData = { username: 'test', password: 'test' };
+      const loginData: LoginData = { email: 'test', password: 'test' };
       expect(await service.login(loginData)).toEqual({ access_token: 'token' });
     });
   });

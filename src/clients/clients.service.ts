@@ -25,7 +25,7 @@ export class ClientsService {
       return await this.clientsRepository.save(clientData);
     } catch (error) {
       if (error instanceof BadRequestException) {
-        throw error;
+        throw new BadRequestException('Client already exists');
       }
       throw new InternalServerErrorException(
         'Error registering client: ' + error.message,

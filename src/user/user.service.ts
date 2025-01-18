@@ -12,7 +12,7 @@ import * as jwt from 'jsonwebtoken';
 import { RegisterUserDto } from './dto/register-user.dto';
 
 export interface LoginData {
-  username: string;
+  email: string;
   password: string;
 }
 
@@ -24,8 +24,8 @@ export class UserService {
   ) {}
 
   async login(loginData: LoginData) {
-    const { username, password } = loginData;
-    const user = await this.usersRepository.findOne({ where: { username } });
+    const { email, password } = loginData;
+    const user = await this.usersRepository.findOne({ where: { email } });
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -67,11 +67,9 @@ export class UserService {
       return await this.usersRepository.save(user);
     } catch (error) {
       if (error instanceof BadRequestException) {
-        throw error;
+        throw new BadRequestException('User already exists');
       }
-      throw new InternalServerErrorException(
-        'Error registering user: ' + error.message,
-      );
+      throw new BadRequestException('Error registering user: ' + error.message);
     }
   }
 
