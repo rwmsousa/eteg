@@ -48,13 +48,9 @@ export class UserController {
         'Missing required fields: username, password, email',
       );
     }
-
     try {
       return await this.userService.registerUser(userData);
     } catch (error) {
-      if (error.code === 'ER_DUP_ENTRY') {
-        throw new BadRequestException('Username already exists');
-      }
       throw new InternalServerErrorException('Error registering user', error);
     }
   }

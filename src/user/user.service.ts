@@ -28,13 +28,11 @@ export class UserService {
     const user = await this.usersRepository.findOne({ where: { username } });
 
     if (!user) {
-      console.log('User not found');
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      console.log('Invalid password');
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -54,6 +52,13 @@ export class UserService {
         );
       }
 
+      const existingUserByEmail = await this.usersRepository.findOne({
+        where: { email: userData.email },
+      });
+      if (existingUserByEmail) {
+        throw new BadRequestException('User already exists');
+      }
+
       const user = new User();
       user.username = userData.username;
       user.password = await bcrypt.hash(userData.password, 10);
@@ -61,6 +66,9 @@ export class UserService {
 
       return await this.usersRepository.save(user);
     } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       throw new InternalServerErrorException(
         'Error registering user: ' + error.message,
       );

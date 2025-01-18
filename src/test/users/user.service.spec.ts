@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { RegisterUserDto } from '../../user/dto/register-user.dto'; // Import the DTO
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
+import { BadRequestException } from '@nestjs/common';
 
 describe('UserService', () => {
   let service: UserService;
@@ -48,6 +49,7 @@ describe('UserService', () => {
   describe('registerUser', () => {
     it('should return the registered user', async () => {
       const user = new User();
+      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
       jest.spyOn(repository, 'save').mockResolvedValue(user);
 
       const userData: RegisterUserDto = {
@@ -56,6 +58,20 @@ describe('UserService', () => {
         email: 'test@example.com',
       };
       expect(await service.registerUser(userData)).toBe(user);
+    });
+
+    it('should throw BadRequestException if user already exists', async () => {
+      const user = new User();
+      jest.spyOn(repository, 'findOne').mockResolvedValue(user);
+
+      const userData: RegisterUserDto = {
+        username: 'test',
+        password: 'test',
+        email: 'test@example.com',
+      };
+      await expect(service.registerUser(userData)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 

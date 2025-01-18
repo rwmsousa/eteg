@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Client } from '../entities/client.entity';
@@ -12,8 +16,17 @@ export class ClientsService {
 
   async registerClient(clientData: Client) {
     try {
+      const existingClientByCpf = await this.clientsRepository.findOne({
+        where: { cpf: clientData.cpf },
+      });
+      if (existingClientByCpf) {
+        throw new BadRequestException('Client already exists');
+      }
       return await this.clientsRepository.save(clientData);
     } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       throw new InternalServerErrorException(
         'Error registering client: ' + error.message,
       );

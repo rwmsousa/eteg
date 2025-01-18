@@ -3,7 +3,10 @@ import { ClientsService } from '../../clients/clients.service';
 import { Client } from '../../entities/client.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { InternalServerErrorException } from '@nestjs/common';
+import {
+  InternalServerErrorException,
+  BadRequestException,
+} from '@nestjs/common';
 
 describe('ClientsService', () => {
   let clientsService: ClientsService;
@@ -36,9 +39,26 @@ describe('ClientsService', () => {
         color: 'blue',
         annotations: '',
       };
+      jest.spyOn(clientsRepository, 'findOne').mockResolvedValue(null);
       jest.spyOn(clientsRepository, 'save').mockResolvedValue(clientData);
 
       expect(await clientsService.registerClient(clientData)).toBe(clientData);
+    });
+
+    it('should throw BadRequestException if client already exists', async () => {
+      const clientData: Client = {
+        id: 1,
+        name: 'John Doe',
+        cpf: '12345678901',
+        email: 'john@example.com',
+        color: 'blue',
+        annotations: '',
+      };
+      jest.spyOn(clientsRepository, 'findOne').mockResolvedValue(clientData);
+
+      await expect(clientsService.registerClient(clientData)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw InternalServerErrorException if there is a database error', async () => {
