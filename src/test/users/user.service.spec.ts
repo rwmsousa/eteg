@@ -6,7 +6,13 @@ import { Repository } from 'typeorm';
 import { RegisterUserDto } from '../../user/dto/register-user.dto';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+  UnauthorizedException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 
 describe('UserService', () => {
   let service: UserService;
@@ -36,6 +42,7 @@ describe('UserService', () => {
       const user = new User();
       user.username = 'test';
       user.password = await bcrypt.hash('test', 10);
+      user.role = 'user';
 
       jest.spyOn(repository, 'findOne').mockResolvedValue(user);
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
@@ -44,11 +51,21 @@ describe('UserService', () => {
       const loginData: LoginData = { email: 'test', password: 'test' };
       expect(await service.login(loginData)).toEqual({ access_token: 'token' });
     });
+
+    it('should throw UnauthorizedException if credentials are invalid', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
+
+      const loginData: LoginData = { email: 'test', password: 'test' };
+      await expect(service.login(loginData)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
   });
 
   describe('registerUser', () => {
     it('should return the registered user', async () => {
       const user = new User();
+      user.role = 'user';
       jest.spyOn(repository, 'findOne').mockResolvedValue(null);
       jest.spyOn(repository, 'save').mockResolvedValue(user);
 
@@ -73,6 +90,17 @@ describe('UserService', () => {
         BadRequestException,
       );
     });
+
+    it('should throw BadRequestException if required fields are missing', async () => {
+      const userData: RegisterUserDto = {
+        username: '',
+        password: '',
+        email: '',
+      };
+      await expect(service.registerUser(userData)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
   });
 
   describe('listUsers', () => {
@@ -82,6 +110,15 @@ describe('UserService', () => {
 
       expect(await service.listUsers()).toBe(users);
     });
+
+    it('should throw InternalServerErrorException on unexpected error', async () => {
+      jest
+        .spyOn(repository, 'find')
+        .mockRejectedValue(new Error('Unexpected error'));
+      await expect(service.listUsers()).rejects.toThrow(
+        InternalServerErrorException,
+      );
+    });
   });
 
   describe('getUser', () => {
@@ -90,6 +127,22 @@ describe('UserService', () => {
       jest.spyOn(repository, 'findOne').mockResolvedValue(user);
 
       expect(await service.getUser(1)).toBe(user);
+    });
+
+    it('should throw NotFoundException if user not found', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
+      await expect(service.getUser(1)).rejects.toThrow(
+        new NotFoundException('User not found'),
+      );
+    });
+
+    it('should throw InternalServerErrorException on unexpected error', async () => {
+      jest
+        .spyOn(repository, 'findOne')
+        .mockRejectedValue(new Error('Unexpected error'));
+      await expect(service.getUser(1)).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 
@@ -102,7 +155,7 @@ describe('UserService', () => {
       jest.spyOn(repository, 'findOne').mockResolvedValue(null);
       await expect(
         service.updateUser({ email: 'test@example.com' }),
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toThrow(new NotFoundException('User not found'));
     });
 
     it('should update the user if found', async () => {
@@ -114,14 +167,48 @@ describe('UserService', () => {
       const userData = { email: 'test@example.com', username: 'newUsername' };
       expect(await service.updateUser(userData)).toBe(user);
     });
+
+    it('should throw InternalServerErrorException on unexpected error', async () => {
+      jest
+        .spyOn(repository, 'findOne')
+        .mockRejectedValue(new Error('Unexpected error'));
+      await expect(
+        service.updateUser({ email: 'test@example.com' }),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
   });
 
   describe('deleteUser', () => {
-    it('should return the deleted user', async () => {
+    it('should throw ForbiddenException if current user is not admin', async () => {
+      const currentUser = new User();
+      currentUser.role = 'user';
+
+      await expect(service.deleteUser(1, currentUser)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should return the deleted user if current user is admin', async () => {
       const result = { affected: 1, raw: {} };
       jest.spyOn(repository, 'delete').mockResolvedValue(result);
 
-      expect(await service.deleteUser(1)).toBe(result);
+      const currentUser = new User();
+      currentUser.role = 'admin';
+
+      expect(await service.deleteUser(1, currentUser)).toBe(result);
+    });
+
+    it('should throw InternalServerErrorException on unexpected error', async () => {
+      jest
+        .spyOn(repository, 'delete')
+        .mockRejectedValue(new Error('Unexpected error'));
+
+      const currentUser = new User();
+      currentUser.role = 'admin';
+
+      await expect(service.deleteUser(1, currentUser)).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 });

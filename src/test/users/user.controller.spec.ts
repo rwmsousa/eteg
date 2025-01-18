@@ -9,7 +9,13 @@ import {
   UnauthorizedException,
   InternalServerErrorException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
+import { Request } from 'express';
+
+interface CustomRequest extends Request {
+  user?: User;
+}
 
 describe('UserController', () => {
   let userController: UserController;
@@ -104,6 +110,20 @@ describe('UserController', () => {
       );
     });
 
+    it('should throw BadRequestException if user already exists', async () => {
+      jest
+        .spyOn(userService, 'registerUser')
+        .mockRejectedValue(new BadRequestException('User already exists'));
+      const userData: RegisterUserDto = {
+        username: 'test',
+        password: 'test',
+        email: 'test@example.com',
+      };
+      await expect(userController.registerUser(userData)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
     it('should throw InternalServerErrorException on unexpected error', async () => {
       jest
         .spyOn(userService, 'registerUser')
@@ -186,6 +206,16 @@ describe('UserController', () => {
       const userData = { email: 'test@example.com', username: 'newUsername' };
       expect(await userController.updateUser(userData)).toBe(user);
     });
+
+    it('should throw InternalServerErrorException on unexpected error', async () => {
+      jest
+        .spyOn(userService, 'updateUser')
+        .mockRejectedValue(new Error('Unexpected error'));
+      const userData = { email: 'test@example.com', username: 'newUsername' };
+      await expect(userController.updateUser(userData)).rejects.toThrow(
+        InternalServerErrorException,
+      );
+    });
   });
 
   describe('deleteUser', () => {
@@ -193,14 +223,34 @@ describe('UserController', () => {
       const result = { affected: 1, raw: {}, generatedMaps: [] };
       jest.spyOn(userService, 'deleteUser').mockResolvedValue(result);
 
-      expect(await userController.deleteUser(1)).toBe(result);
+      const req = {
+        user: { id: 1, role: 'admin' },
+      } as unknown as CustomRequest;
+      expect(await userController.deleteUser(1, req)).toBe(result);
     });
 
     it('should throw NotFoundException if user not found', async () => {
       const result = { affected: 0, raw: {}, generatedMaps: [] };
       jest.spyOn(userService, 'deleteUser').mockResolvedValue(result);
-      await expect(userController.deleteUser(1)).rejects.toThrow(
+
+      const req = {
+        user: { id: 1, role: 'admin' },
+      } as unknown as CustomRequest;
+      await expect(userController.deleteUser(1, req)).rejects.toThrow(
         NotFoundException,
+      );
+    });
+
+    it('should throw ForbiddenException if current user is not admin', async () => {
+      jest
+        .spyOn(userService, 'deleteUser')
+        .mockRejectedValue(
+          new ForbiddenException('Only admins can delete users'),
+        );
+
+      const req = { user: { id: 1, role: 'user' } } as unknown as CustomRequest;
+      await expect(userController.deleteUser(1, req)).rejects.toThrow(
+        ForbiddenException,
       );
     });
 
@@ -208,7 +258,11 @@ describe('UserController', () => {
       jest
         .spyOn(userService, 'deleteUser')
         .mockRejectedValue(new Error('Unexpected error'));
-      await expect(userController.deleteUser(1)).rejects.toThrow(
+
+      const req = {
+        user: { id: 1, role: 'admin' },
+      } as unknown as CustomRequest;
+      await expect(userController.deleteUser(1, req)).rejects.toThrow(
         InternalServerErrorException,
       );
     });
