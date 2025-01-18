@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   InternalServerErrorException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -93,13 +94,30 @@ export class UserService {
     }
   }
 
-  async updateUser(id: number, userData: User) {
+  async updateUser(userData: Partial<User>) {
+    if (!userData.email) {
+      throw new BadRequestException('Email is required');
+    }
+
     try {
-      return await this.usersRepository.update(id, userData);
+      const user = await this.usersRepository.findOne({ where: { email: userData.email } });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      if (userData.username) {
+        user.username = userData.username;
+      }
+      if (userData.password) {
+        user.password = await bcrypt.hash(userData.password, 10);
+      }
+
+      return await this.usersRepository.save(user);
     } catch (error) {
-      throw new InternalServerErrorException(
-        'Error updating user: ' + error.message,
-      );
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Error updating user: ' + error.message);
     }
   }
 

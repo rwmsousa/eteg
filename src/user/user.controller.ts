@@ -86,13 +86,13 @@ export class UserController {
     }
   }
 
-  @Put(':id')
-  async updateUser(@Param('id') id: number, @Body() userData: User) {
+  @Put()
+  async updateUser(@Body() userData: Partial<User>) {
+    if (!userData.email) {
+      throw new BadRequestException('Email is required');
+    }
     try {
-      const result = await this.userService.updateUser(id, userData);
-      if (result.affected === 0) {
-        throw new NotFoundException('User not found');
-      }
+      const result = await this.userService.updateUser(userData);
       return result;
     } catch (error) {
       if (error instanceof NotFoundException) {

@@ -163,28 +163,26 @@ describe('UserController', () => {
   });
 
   describe('updateUser', () => {
-    it('should return the updated user', async () => {
-      const result = { affected: 1, raw: {}, generatedMaps: [] };
-      jest.spyOn(userService, 'updateUser').mockResolvedValue(result);
-
-      expect(await userController.updateUser(1, new User())).toBe(result);
+    it('should throw BadRequestException if email is not provided', async () => {
+      await expect(userController.updateUser({})).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
-    it('should throw NotFoundException if user not found', async () => {
-      const result = { affected: 0, raw: {}, generatedMaps: [] };
-      jest.spyOn(userService, 'updateUser').mockResolvedValue(result);
-      await expect(userController.updateUser(1, new User())).rejects.toThrow(
+    it('should throw NotFoundException if user is not found', async () => {
+      jest.spyOn(userService, 'updateUser').mockRejectedValue(new NotFoundException('User not found'));
+      await expect(userController.updateUser({ email: 'test@example.com' })).rejects.toThrow(
         NotFoundException,
       );
     });
 
-    it('should throw InternalServerErrorException on unexpected error', async () => {
-      jest
-        .spyOn(userService, 'updateUser')
-        .mockRejectedValue(new Error('Unexpected error'));
-      await expect(userController.updateUser(1, new User())).rejects.toThrow(
-        InternalServerErrorException,
-      );
+    it('should update the user if found', async () => {
+      const user = new User();
+      user.email = 'test@example.com';
+      jest.spyOn(userService, 'updateUser').mockResolvedValue(user);
+
+      const userData = { email: 'test@example.com', username: 'newUsername' };
+      expect(await userController.updateUser(userData)).toBe(user);
     });
   });
 

@@ -6,7 +6,7 @@ import { Repository } from 'typeorm';
 import { RegisterUserDto } from '../../user/dto/register-user.dto';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 describe('UserService', () => {
   let service: UserService;
@@ -94,11 +94,27 @@ describe('UserService', () => {
   });
 
   describe('updateUser', () => {
-    it('should return the updated user', async () => {
-      const result = { affected: 1, raw: {}, generatedMaps: [] };
-      jest.spyOn(repository, 'update').mockResolvedValue(result);
+    it('should throw BadRequestException if email is not provided', async () => {
+      await expect(service.updateUser({})).rejects.toThrow(
+        BadRequestException,
+      );
+    });
 
-      expect(await service.updateUser(1, new User())).toBe(result);
+    it('should throw NotFoundException if user is not found', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
+      await expect(service.updateUser({ email: 'test@example.com' })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should update the user if found', async () => {
+      const user = new User();
+      user.email = 'test@example.com';
+      jest.spyOn(repository, 'findOne').mockResolvedValue(user);
+      jest.spyOn(repository, 'save').mockResolvedValue(user);
+
+      const userData = { email: 'test@example.com', username: 'newUsername' };
+      expect(await service.updateUser(userData)).toBe(user);
     });
   });
 
