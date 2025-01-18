@@ -48,6 +48,10 @@ export class AppModule {
     consumer
       .apply(AuthMiddleware)
       .forRoutes(
+        { path: 'clients', method: RequestMethod.GET },
+        { path: 'clients/:id', method: RequestMethod.GET },
+        { path: 'clients/:id', method: RequestMethod.PUT },
+        { path: 'clients/:id', method: RequestMethod.DELETE },
         { path: 'user/register', method: RequestMethod.POST },
         { path: 'user', method: RequestMethod.GET },
         { path: 'user/:id', method: RequestMethod.GET },
