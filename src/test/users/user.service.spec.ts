@@ -178,40 +178,6 @@ describe('UserService', () => {
     });
   });
 
-  describe('deleteUser', () => {
-    it('should throw ForbiddenException if current user is not admin', async () => {
-      const currentUser = new User();
-      currentUser.role = 'user';
-
-      await expect(service.deleteUser(1, currentUser)).rejects.toThrow(
-        ForbiddenException,
-      );
-    });
-
-    it('should return the deleted user if current user is admin', async () => {
-      const result = { affected: 1, raw: {} };
-      jest.spyOn(repository, 'delete').mockResolvedValue(result);
-
-      const currentUser = new User();
-      currentUser.role = 'admin';
-
-      expect(await service.deleteUser(1, currentUser)).toBe(result);
-    });
-
-    it('should throw InternalServerErrorException on unexpected error', async () => {
-      jest
-        .spyOn(repository, 'delete')
-        .mockRejectedValue(new Error('Unexpected error'));
-
-      const currentUser = new User();
-      currentUser.role = 'admin';
-
-      await expect(service.deleteUser(1, currentUser)).rejects.toThrow(
-        InternalServerErrorException,
-      );
-    });
-  });
-
   describe('deleteUserByEmail', () => {
     it('should delete a user', async () => {
       const email = 'john@example.com';

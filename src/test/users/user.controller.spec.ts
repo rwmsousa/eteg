@@ -1,135 +1,139 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserController } from '../../user/user.controller';
 import { UserService } from '../../user/user.service';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../../entities/user.entity';
-import { LoginData } from '../../user/user.service';
-import { RegisterUserDto } from '../../user/dto/register-user.dto';
+import { Repository } from 'typeorm';
 import {
   BadRequestException,
-  UnauthorizedException,
   InternalServerErrorException,
   NotFoundException,
+  UnauthorizedException,
   ForbiddenException,
 } from '@nestjs/common';
+import { RegisterUserDto } from '../../user/dto/register-user.dto';
+import { LoginData } from '../../user/dto/login-data.dto';
 
 describe('UserController', () => {
-  let userController: UserController;
-  let userService: UserService;
+  let controller: UserController;
+  let service: UserService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [UserController],
       providers: [
+        UserService,
         {
-          provide: UserService,
-          useValue: {
-            login: jest.fn(),
-            registerUser: jest.fn(),
-            listUsers: jest.fn(),
-            getUser: jest.fn(),
-            updateUser: jest.fn(),
-            deleteUser: jest.fn(),
-            deleteUserByEmail: jest.fn(),
-          },
+          provide: getRepositoryToken(User),
+          useClass: Repository,
         },
       ],
     }).compile();
 
-    userController = module.get<UserController>(UserController);
-    userService = module.get<UserService>(UserService);
+    controller = module.get<UserController>(UserController);
+    service = module.get<UserService>(UserService);
+
+    // Mock the logger
+    jest.spyOn(controller['logger'], 'error').mockImplementation(() => {});
   });
 
   it('should be defined', () => {
-    expect(userController).toBeDefined();
+    expect(controller).toBeDefined();
   });
 
   describe('login', () => {
     it('should return a token', async () => {
       const result = { access_token: 'token' };
-      jest.spyOn(userService, 'login').mockResolvedValue(result);
+      jest.spyOn(service, 'login').mockResolvedValue(result);
 
       const loginData: LoginData = { email: 'test', password: 'test' };
-      expect(await userController.login(loginData)).toEqual(result);
+      expect(await controller.login(loginData)).toEqual(result);
     });
 
     it('should throw BadRequestException if missing credentials', async () => {
       const loginData: LoginData = { email: '', password: '' };
-      await expect(userController.login(loginData)).rejects.toThrow(
+      await expect(controller.login(loginData)).rejects.toThrow(
         BadRequestException,
       );
     });
 
     it('should throw UnauthorizedException if credentials are invalid', async () => {
       jest
-        .spyOn(userService, 'login')
+        .spyOn(service, 'login')
         .mockRejectedValue(new UnauthorizedException('Unauthorized'));
 
       const loginData: LoginData = { email: 'test', password: 'wrong' };
-      await expect(userController.login(loginData)).rejects.toThrow(
+      await expect(controller.login(loginData)).rejects.toThrow(
         UnauthorizedException,
       );
     });
 
     it('should throw InternalServerErrorException for unexpected errors', async () => {
       jest
-        .spyOn(userService, 'login')
+        .spyOn(service, 'login')
         .mockRejectedValue(new Error('Unexpected error'));
 
       const loginData: LoginData = { email: 'test', password: 'test' };
-      await expect(userController.login(loginData)).rejects.toThrow(
+      await expect(controller.login(loginData)).rejects.toThrow(
         InternalServerErrorException,
       );
     });
   });
 
   describe('registerUser', () => {
-    it('should return the registered user', async () => {
-      const user = new User();
-      jest.spyOn(userService, 'registerUser').mockResolvedValue(user);
-
+    it('should register a user with valid data', async () => {
       const userData: RegisterUserDto = {
-        username: 'test',
-        password: 'test',
-        email: 'test@example.com',
+        username: 'johndoe',
+        password: 'password123',
+        email: 'john@example.com',
       };
-      expect(await userController.registerUser(userData)).toBe(user);
+      const result = new User();
+      jest.spyOn(service, 'registerUser').mockResolvedValue(result);
+
+      const req = { user: { role: 'admin' } } as any;
+      expect(await controller.registerUser(userData, req)).toBe(result);
+      expect(service.registerUser).toHaveBeenCalledWith(userData);
     });
 
-    it('should throw BadRequestException if missing credentials', async () => {
-      const userData: RegisterUserDto = {
-        username: '',
-        password: '',
-        email: '',
+    it('should throw BadRequestException if required fields are missing', async () => {
+      const userData: Partial<RegisterUserDto> = {
+        username: 'johndoe',
       };
-      await expect(userController.registerUser(userData)).rejects.toThrow(
-        BadRequestException,
-      );
+
+      const req = { user: { role: 'admin' } } as any;
+      await expect(
+        controller.registerUser(userData as RegisterUserDto, req),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if user already exists', async () => {
-      jest
-        .spyOn(userService, 'registerUser')
-        .mockRejectedValue(new BadRequestException('User already exists'));
       const userData: RegisterUserDto = {
-        username: 'test',
-        password: 'test',
-        email: 'test@example.com',
+        username: 'johndoe',
+        password: 'password123',
+        email: 'john@example.com',
       };
-      await expect(userController.registerUser(userData)).rejects.toThrow(
+      jest
+        .spyOn(service, 'registerUser')
+        .mockRejectedValue(new BadRequestException('User already exists'));
+
+      const req = { user: { role: 'admin' } } as any;
+      await expect(controller.registerUser(userData, req)).rejects.toThrow(
         BadRequestException,
       );
     });
 
-    it('should throw InternalServerErrorException on unexpected error', async () => {
-      jest
-        .spyOn(userService, 'registerUser')
-        .mockRejectedValue(new Error('Database error'));
+    it('should throw InternalServerErrorException if there is a database error', async () => {
       const userData: RegisterUserDto = {
-        username: 'test',
-        password: 'test',
-        email: 'test@example.com',
+        username: 'johndoe',
+        password: 'password123',
+        email: 'john@example.com',
       };
-      await expect(userController.registerUser(userData)).rejects.toThrow(
+      jest
+        .spyOn(service, 'registerUser')
+        .mockRejectedValue(new Error('Database error'));
+
+      const req = { user: { role: 'admin' } } as any;
+      await expect(controller.registerUser(userData, req)).rejects.toThrow(
         InternalServerErrorException,
       );
     });
@@ -138,16 +142,25 @@ describe('UserController', () => {
   describe('listUsers', () => {
     it('should return an array of users', async () => {
       const users = [new User()];
-      jest.spyOn(userService, 'listUsers').mockResolvedValue(users);
+      jest.spyOn(service, 'listUsers').mockResolvedValue(users);
 
-      expect(await userController.listUsers()).toBe(users);
+      const req = { user: { role: 'admin' } } as any;
+      expect(await controller.listUsers(req)).toBe(users);
+    });
+
+    it('should throw ForbiddenException if current user is not admin', async () => {
+      const req = { user: { role: 'user' } } as any;
+      await expect(controller.listUsers(req)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw InternalServerErrorException on unexpected error', async () => {
       jest
-        .spyOn(userService, 'listUsers')
+        .spyOn(service, 'listUsers')
         .mockRejectedValue(new Error('Unexpected error'));
-      await expect(userController.listUsers()).rejects.toThrow(
+      const req = { user: { role: 'admin' } } as any;
+      await expect(controller.listUsers(req)).rejects.toThrow(
         InternalServerErrorException,
       );
     });
@@ -156,59 +169,82 @@ describe('UserController', () => {
   describe('getUser', () => {
     it('should return a user', async () => {
       const user = new User();
-      jest.spyOn(userService, 'getUser').mockResolvedValue(user);
+      jest.spyOn(service, 'getUser').mockResolvedValue(user);
 
-      expect(await userController.getUser(1)).toBe(user);
+      const req = { user: { role: 'admin' } } as any;
+      expect(await controller.getUser(1, req)).toBe(user);
+    });
+
+    it('should throw ForbiddenException if current user is not admin and not the user being accessed', async () => {
+      const req = { user: { role: 'user', id: 2 } } as any;
+      await expect(controller.getUser(1, req)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException if user not found', async () => {
-      jest.spyOn(userService, 'getUser').mockResolvedValue(null);
-      await expect(userController.getUser(1)).rejects.toThrow(
+      jest.spyOn(service, 'getUser').mockResolvedValue(null);
+      const req = { user: { role: 'admin' } } as any;
+      await expect(controller.getUser(1, req)).rejects.toThrow(
         NotFoundException,
       );
     });
 
     it('should throw InternalServerErrorException on unexpected error', async () => {
       jest
-        .spyOn(userService, 'getUser')
+        .spyOn(service, 'getUser')
         .mockRejectedValue(new Error('Unexpected error'));
-      await expect(userController.getUser(1)).rejects.toThrow(
+      const req = { user: { role: 'admin' } } as any;
+      await expect(controller.getUser(1, req)).rejects.toThrow(
         InternalServerErrorException,
       );
     });
   });
 
   describe('updateUser', () => {
+    it('should update the user if found', async () => {
+      const user = new User();
+      user.email = 'test@example.com';
+      jest.spyOn(service, 'updateUser').mockResolvedValue(user);
+
+      const userData = { email: 'test@example.com', username: 'newUsername' };
+      const req = { user: { role: 'admin' } } as any;
+      expect(await controller.updateUser(userData, req)).toBe(user);
+    });
+
+    it('should throw ForbiddenException if current user is not admin and not the user being updated', async () => {
+      const userData = { email: 'test@example.com', username: 'newUsername' };
+      const req = { user: { role: 'user', email: 'other@example.com' } } as any;
+      await expect(controller.updateUser(userData, req)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
     it('should throw BadRequestException if email is not provided', async () => {
-      await expect(userController.updateUser({})).rejects.toThrow(
+      const req = { user: { role: 'admin' } } as any;
+      await expect(controller.updateUser({}, req)).rejects.toThrow(
         BadRequestException,
       );
     });
 
     it('should throw NotFoundException if user is not found', async () => {
       jest
-        .spyOn(userService, 'updateUser')
+        .spyOn(service, 'updateUser')
         .mockRejectedValue(new NotFoundException('User not found'));
-      await expect(
-        userController.updateUser({ email: 'test@example.com' }),
-      ).rejects.toThrow(NotFoundException);
-    });
-
-    it('should update the user if found', async () => {
-      const user = new User();
-      user.email = 'test@example.com';
-      jest.spyOn(userService, 'updateUser').mockResolvedValue(user);
-
       const userData = { email: 'test@example.com', username: 'newUsername' };
-      expect(await userController.updateUser(userData)).toBe(user);
+      const req = { user: { role: 'admin' } } as any;
+      await expect(controller.updateUser(userData, req)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw InternalServerErrorException on unexpected error', async () => {
       jest
-        .spyOn(userService, 'updateUser')
+        .spyOn(service, 'updateUser')
         .mockRejectedValue(new Error('Unexpected error'));
       const userData = { email: 'test@example.com', username: 'newUsername' };
-      await expect(userController.updateUser(userData)).rejects.toThrow(
+      const req = { user: { role: 'admin' } } as any;
+      await expect(controller.updateUser(userData, req)).rejects.toThrow(
         InternalServerErrorException,
       );
     });
@@ -225,11 +261,9 @@ describe('UserController', () => {
       const currentUser = { role: 'admin' } as User;
       const req = { user: currentUser } as any;
       const deleteResult = { affected: 1, raw: {} };
-      jest
-        .spyOn(userService, 'deleteUserByEmail')
-        .mockResolvedValue(deleteResult);
+      jest.spyOn(service, 'deleteUserByEmail').mockResolvedValue(deleteResult);
 
-      expect(await userController.deleteUser(body, req)).toEqual(deleteResult);
+      expect(await controller.deleteUser(body, req)).toEqual(deleteResult);
     });
 
     it('should throw NotFoundException if user not found', async () => {
@@ -242,10 +276,10 @@ describe('UserController', () => {
       const currentUser = { role: 'admin' } as User;
       const req = { user: currentUser } as any;
       jest
-        .spyOn(userService, 'deleteUserByEmail')
+        .spyOn(service, 'deleteUserByEmail')
         .mockRejectedValue(new NotFoundException());
 
-      await expect(userController.deleteUser(body, req)).rejects.toThrow(
+      await expect(controller.deleteUser(body, req)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -260,10 +294,10 @@ describe('UserController', () => {
       const currentUser = { role: 'user' } as User;
       const req = { user: currentUser } as any;
       jest
-        .spyOn(userService, 'deleteUserByEmail')
+        .spyOn(service, 'deleteUserByEmail')
         .mockRejectedValue(new ForbiddenException());
 
-      await expect(userController.deleteUser(body, req)).rejects.toThrow(
+      await expect(controller.deleteUser(body, req)).rejects.toThrow(
         ForbiddenException,
       );
     });
@@ -278,10 +312,10 @@ describe('UserController', () => {
       const currentUser = { role: 'admin' } as User;
       const req = { user: currentUser } as any;
       jest
-        .spyOn(userService, 'deleteUserByEmail')
+        .spyOn(service, 'deleteUserByEmail')
         .mockRejectedValue(new Error('Unexpected error'));
 
-      await expect(userController.deleteUser(body, req)).rejects.toThrow(
+      await expect(controller.deleteUser(body, req)).rejects.toThrow(
         InternalServerErrorException,
       );
     });
