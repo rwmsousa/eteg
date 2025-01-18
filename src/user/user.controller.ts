@@ -112,11 +112,21 @@ export class UserController {
     }
   }
 
-  @Delete(':id')
-  async deleteUser(@Param('id') id: number, @Req() req: CustomRequest) {
+  @Delete()
+  async deleteUser(
+    @Body() body: { email: string; [key: string]: any },
+    @Req() req: CustomRequest,
+  ) {
+    const { email } = body;
+    if (!email) {
+      throw new BadRequestException('Email is required');
+    }
     try {
       const currentUser = req.user as User;
-      const result = await this.userService.deleteUser(id, currentUser);
+      const result = await this.userService.deleteUserByEmail(
+        email,
+        currentUser,
+      );
       if (result.affected === 0) {
         throw new NotFoundException('User not found');
       }

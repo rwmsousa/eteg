@@ -11,11 +11,6 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { Request } from 'express';
-
-interface CustomRequest extends Request {
-  user?: User;
-}
 
 describe('UserController', () => {
   let userController: UserController;
@@ -34,6 +29,7 @@ describe('UserController', () => {
             getUser: jest.fn(),
             updateUser: jest.fn(),
             deleteUser: jest.fn(),
+            deleteUserByEmail: jest.fn(),
           },
         },
       ],
@@ -219,50 +215,73 @@ describe('UserController', () => {
   });
 
   describe('deleteUser', () => {
-    it('should return the deleted user', async () => {
-      const result = { affected: 1, raw: {}, generatedMaps: [] };
-      jest.spyOn(userService, 'deleteUser').mockResolvedValue(result);
+    it('should delete a user', async () => {
+      const body = {
+        email: 'john@example.com',
+        username: 'user3',
+        password: 'password3',
+        role: 'user',
+      };
+      const currentUser = { role: 'admin' } as User;
+      const req = { user: currentUser } as any;
+      const deleteResult = { affected: 1, raw: {} };
+      jest
+        .spyOn(userService, 'deleteUserByEmail')
+        .mockResolvedValue(deleteResult);
 
-      const req = {
-        user: { id: 1, role: 'admin' },
-      } as unknown as CustomRequest;
-      expect(await userController.deleteUser(1, req)).toBe(result);
+      expect(await userController.deleteUser(body, req)).toEqual(deleteResult);
     });
 
     it('should throw NotFoundException if user not found', async () => {
-      const result = { affected: 0, raw: {}, generatedMaps: [] };
-      jest.spyOn(userService, 'deleteUser').mockResolvedValue(result);
+      const body = {
+        email: 'john@example.com',
+        username: 'user3',
+        password: 'password3',
+        role: 'user',
+      };
+      const currentUser = { role: 'admin' } as User;
+      const req = { user: currentUser } as any;
+      jest
+        .spyOn(userService, 'deleteUserByEmail')
+        .mockRejectedValue(new NotFoundException());
 
-      const req = {
-        user: { id: 1, role: 'admin' },
-      } as unknown as CustomRequest;
-      await expect(userController.deleteUser(1, req)).rejects.toThrow(
+      await expect(userController.deleteUser(body, req)).rejects.toThrow(
         NotFoundException,
       );
     });
 
     it('should throw ForbiddenException if current user is not admin', async () => {
+      const body = {
+        email: 'john@example.com',
+        username: 'user3',
+        password: 'password3',
+        role: 'user',
+      };
+      const currentUser = { role: 'user' } as User;
+      const req = { user: currentUser } as any;
       jest
-        .spyOn(userService, 'deleteUser')
-        .mockRejectedValue(
-          new ForbiddenException('Only admins can delete users'),
-        );
+        .spyOn(userService, 'deleteUserByEmail')
+        .mockRejectedValue(new ForbiddenException());
 
-      const req = { user: { id: 1, role: 'user' } } as unknown as CustomRequest;
-      await expect(userController.deleteUser(1, req)).rejects.toThrow(
+      await expect(userController.deleteUser(body, req)).rejects.toThrow(
         ForbiddenException,
       );
     });
 
     it('should throw InternalServerErrorException on unexpected error', async () => {
+      const body = {
+        email: 'john@example.com',
+        username: 'user3',
+        password: 'password3',
+        role: 'user',
+      };
+      const currentUser = { role: 'admin' } as User;
+      const req = { user: currentUser } as any;
       jest
-        .spyOn(userService, 'deleteUser')
+        .spyOn(userService, 'deleteUserByEmail')
         .mockRejectedValue(new Error('Unexpected error'));
 
-      const req = {
-        user: { id: 1, role: 'admin' },
-      } as unknown as CustomRequest;
-      await expect(userController.deleteUser(1, req)).rejects.toThrow(
+      await expect(userController.deleteUser(body, req)).rejects.toThrow(
         InternalServerErrorException,
       );
     });

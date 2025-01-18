@@ -211,4 +211,49 @@ describe('UserService', () => {
       );
     });
   });
+
+  describe('deleteUserByEmail', () => {
+    it('should delete a user', async () => {
+      const email = 'john@example.com';
+      const currentUser = { role: 'admin' } as User;
+      const deleteResult = { affected: 1, raw: {} };
+      jest.spyOn(repository, 'findOne').mockResolvedValue({ email } as User);
+      jest.spyOn(repository, 'delete').mockResolvedValue(deleteResult);
+
+      expect(await service.deleteUserByEmail(email, currentUser)).toEqual(
+        deleteResult,
+      );
+    });
+
+    it('should throw NotFoundException if user not found', async () => {
+      const email = 'john@example.com';
+      const currentUser = { role: 'admin' } as User;
+      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
+
+      await expect(
+        service.deleteUserByEmail(email, currentUser),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException if current user is not admin', async () => {
+      const email = 'john@example.com';
+      const currentUser = { role: 'user' } as User;
+
+      await expect(
+        service.deleteUserByEmail(email, currentUser),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw InternalServerErrorException on unexpected error', async () => {
+      const email = 'john@example.com';
+      const currentUser = { role: 'admin' } as User;
+      jest
+        .spyOn(repository, 'findOne')
+        .mockRejectedValue(new Error('Unexpected error'));
+
+      await expect(
+        service.deleteUserByEmail(email, currentUser),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+  });
 });

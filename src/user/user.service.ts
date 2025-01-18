@@ -149,4 +149,25 @@ export class UserService {
       );
     }
   }
+
+  async deleteUserByEmail(email: string, currentUser: User) {
+    if (!currentUser || currentUser.role !== 'admin') {
+      throw new ForbiddenException('Only admins can delete users');
+    }
+
+    try {
+      const user = await this.usersRepository.findOne({ where: { email } });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      return await this.usersRepository.delete({ email });
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Error deleting user: ' + error.message,
+      );
+    }
+  }
 }
