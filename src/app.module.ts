@@ -5,6 +5,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ClientsModule } from './clients/clients.module';
 import { UserModule } from './user/user.module';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 @Module({
   imports: [
@@ -14,13 +17,15 @@ import { UserModule } from './user/user.module';
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DATABASE_HOST,
-      port: parseInt(process.env.DATABASE_PORT, 10),
+      port: Number(process.env.DATABASE_PORT),
       username: process.env.DATABASE_USER,
       password: process.env.DATABASE_PASSWORD,
       database: process.env.DATABASE_NAME,
+      synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
+      schema: process.env.DATABASE_SCHEMA,
+      logging: Boolean(process.env.DATABASE_LOGGING),
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: process.env.NODE_ENV === 'development',
-      autoLoadEntities: true,
+      migrations: [__dirname + '/migrations/*{.ts,.js}'],
     }),
     ClientsModule,
     UserModule,
