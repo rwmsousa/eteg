@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClientsController } from '../../clients/clients.controller';
 import { ClientsService } from '../../clients/clients.service';
+import { getRepositoryToken, TypeOrmModule } from '@nestjs/typeorm';
 import { Client } from '../../entities/client.entity';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   BadRequestException,
@@ -10,13 +10,24 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { RegisterClientDto } from '../../clients/dto/register-client.dto';
+import { UserModule } from '../../user/user.module';
 
 describe('ClientsController', () => {
-  let clientsController: ClientsController;
-  let clientsService: ClientsService;
+  let controller: ClientsController;
+  let service: ClientsService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      imports: [
+        UserModule,
+        TypeOrmModule.forRoot({
+          type: 'sqlite',
+          database: ':memory:',
+          entities: [Client],
+          synchronize: true,
+        }),
+        TypeOrmModule.forFeature([Client]),
+      ],
       controllers: [ClientsController],
       providers: [
         ClientsService,
@@ -27,12 +38,15 @@ describe('ClientsController', () => {
       ],
     }).compile();
 
-    clientsController = module.get<ClientsController>(ClientsController);
-    clientsService = module.get<ClientsService>(ClientsService);
+    controller = module.get<ClientsController>(ClientsController);
+    service = module.get<ClientsService>(ClientsService);
+
+    // Mock the logger
+    jest.spyOn(controller['logger'], 'error').mockImplementation(() => {});
   });
 
   it('should be defined', () => {
-    expect(clientsController).toBeDefined();
+    expect(controller).toBeDefined();
   });
 
   describe('registerClient', () => {
@@ -45,9 +59,12 @@ describe('ClientsController', () => {
         annotations: '',
       };
       const result = new Client();
-      jest.spyOn(clientsService, 'registerClient').mockResolvedValue(result);
+      jest.spyOn(service, 'getClientByCpf').mockResolvedValue(undefined);
+      jest.spyOn(service, 'registerClient').mockResolvedValue(result);
 
-      expect(await clientsController.registerClient(clientData)).toBe(result);
+      expect(await controller.registerClient(clientData)).toBe(result);
+      expect(service.getClientByCpf).toHaveBeenCalledWith(clientData.cpf);
+      expect(service.registerClient).toHaveBeenCalledWith(clientData);
     });
 
     it('should throw BadRequestException if required fields are missing', async () => {
@@ -57,7 +74,7 @@ describe('ClientsController', () => {
       };
 
       await expect(
-        clientsController.registerClient(clientData as RegisterClientDto),
+        controller.registerClient(clientData as RegisterClientDto),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -70,12 +87,12 @@ describe('ClientsController', () => {
         annotations: '',
       };
       jest
-        .spyOn(clientsService, 'registerClient')
+        .spyOn(service, 'registerClient')
         .mockRejectedValue(new Error('Database error'));
 
-      await expect(
-        clientsController.registerClient(clientData),
-      ).rejects.toThrow(InternalServerErrorException);
+      await expect(controller.registerClient(clientData)).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 
@@ -91,16 +108,16 @@ describe('ClientsController', () => {
           annotations: '',
         },
       ];
-      jest.spyOn(clientsService, 'listClients').mockResolvedValue(result);
+      jest.spyOn(service, 'listClients').mockResolvedValue(result);
 
-      expect(await clientsController.listClients()).toBe(result);
+      expect(await controller.listClients()).toBe(result);
     });
 
     it('should throw InternalServerErrorException on unexpected error', async () => {
       jest
-        .spyOn(clientsService, 'listClients')
+        .spyOn(service, 'listClients')
         .mockRejectedValue(new Error('Unexpected error'));
-      await expect(clientsController.listClients()).rejects.toThrow(
+      await expect(controller.listClients()).rejects.toThrow(
         InternalServerErrorException,
       );
     });
@@ -116,23 +133,21 @@ describe('ClientsController', () => {
         color: 'blue',
         annotations: '',
       };
-      jest.spyOn(clientsService, 'getClient').mockResolvedValue(result);
+      jest.spyOn(service, 'getClient').mockResolvedValue(result);
 
-      expect(await clientsController.getClient(1)).toBe(result);
+      expect(await controller.getClient(1)).toBe(result);
     });
 
     it('should throw NotFoundException if client not found', async () => {
-      jest.spyOn(clientsService, 'getClient').mockResolvedValue(null);
-      await expect(clientsController.getClient(1)).rejects.toThrow(
-        NotFoundException,
-      );
+      jest.spyOn(service, 'getClient').mockResolvedValue(null);
+      await expect(controller.getClient(1)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw InternalServerErrorException on unexpected error', async () => {
       jest
-        .spyOn(clientsService, 'getClient')
+        .spyOn(service, 'getClient')
         .mockRejectedValue(new Error('Unexpected error'));
-      await expect(clientsController.getClient(1)).rejects.toThrow(
+      await expect(controller.getClient(1)).rejects.toThrow(
         InternalServerErrorException,
       );
     });
@@ -148,14 +163,14 @@ describe('ClientsController', () => {
         annotations: '',
       };
       const result = new Client();
-      jest.spyOn(clientsService, 'updateClient').mockResolvedValue(result);
+      jest.spyOn(service, 'updateClient').mockResolvedValue(result);
 
-      expect(await clientsController.updateClient(1, clientData)).toBe(result);
+      expect(await controller.updateClient(1, clientData)).toBe(result);
     });
 
     it('should throw NotFoundException if client not found', async () => {
       jest
-        .spyOn(clientsService, 'updateClient')
+        .spyOn(service, 'updateClient')
         .mockRejectedValue(new NotFoundException());
       const clientData: RegisterClientDto = {
         name: 'John Doe',
@@ -164,51 +179,51 @@ describe('ClientsController', () => {
         color: 'blue',
         annotations: '',
       };
-      await expect(
-        clientsController.updateClient(1, clientData),
-      ).rejects.toThrow(NotFoundException);
-    });
-
-    it('should throw InternalServerErrorException on unexpected error', async () => {
-      jest
-        .spyOn(clientsService, 'updateClient')
-        .mockRejectedValue(new Error('Unexpected error'));
-      const clientData: RegisterClientDto = {
-        name: 'John Doe',
-        cpf: '12345678901',
-        email: 'john@example.com',
-        color: 'blue',
-        annotations: '',
-      };
-      await expect(
-        clientsController.updateClient(1, clientData),
-      ).rejects.toThrow(InternalServerErrorException);
-    });
-  });
-
-  describe('deleteClient', () => {
-    it('should delete a client', async () => {
-      jest.spyOn(clientsService, 'deleteClient').mockResolvedValue(undefined);
-
-      expect(await clientsController.deleteClient(1)).toEqual({
-        message: 'Client deleted successfully',
-      });
-    });
-
-    it('should throw NotFoundException if client not found', async () => {
-      jest
-        .spyOn(clientsService, 'deleteClient')
-        .mockRejectedValue(new NotFoundException());
-      await expect(clientsController.deleteClient(1)).rejects.toThrow(
+      await expect(controller.updateClient(1, clientData)).rejects.toThrow(
         NotFoundException,
       );
     });
 
     it('should throw InternalServerErrorException on unexpected error', async () => {
       jest
-        .spyOn(clientsService, 'deleteClient')
+        .spyOn(service, 'updateClient')
         .mockRejectedValue(new Error('Unexpected error'));
-      await expect(clientsController.deleteClient(1)).rejects.toThrow(
+      const clientData: RegisterClientDto = {
+        name: 'John Doe',
+        cpf: '12345678901',
+        email: 'john@example.com',
+        color: 'blue',
+        annotations: '',
+      };
+      await expect(controller.updateClient(1, clientData)).rejects.toThrow(
+        InternalServerErrorException,
+      );
+    });
+  });
+
+  describe('deleteClient', () => {
+    it('should delete a client', async () => {
+      jest.spyOn(service, 'deleteClient').mockResolvedValue(undefined);
+
+      expect(await controller.deleteClient(1)).toEqual({
+        message: 'Client deleted successfully',
+      });
+    });
+
+    it('should throw NotFoundException if client not found', async () => {
+      jest
+        .spyOn(service, 'deleteClient')
+        .mockRejectedValue(new NotFoundException());
+      await expect(controller.deleteClient(1)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw InternalServerErrorException on unexpected error', async () => {
+      jest
+        .spyOn(service, 'deleteClient')
+        .mockRejectedValue(new Error('Unexpected error'));
+      await expect(controller.deleteClient(1)).rejects.toThrow(
         InternalServerErrorException,
       );
     });

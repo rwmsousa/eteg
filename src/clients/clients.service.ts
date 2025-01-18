@@ -13,18 +13,18 @@ import { RegisterClientDto } from './dto/register-client.dto';
 export class ClientsService {
   constructor(
     @InjectRepository(Client)
-    private clientsRepository: Repository<Client>,
+    private readonly clientRepository: Repository<Client>,
   ) {}
 
   async registerClient(clientData: RegisterClientDto) {
     try {
-      const existingClientByCpf = await this.clientsRepository.findOne({
+      const existingClientByCpf = await this.clientRepository.findOne({
         where: { cpf: clientData.cpf },
       });
       if (existingClientByCpf) {
         throw new BadRequestException('Client already exists');
       }
-      return await this.clientsRepository.save(clientData);
+      return await this.clientRepository.save(clientData);
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
@@ -37,7 +37,7 @@ export class ClientsService {
 
   async listClients() {
     try {
-      return await this.clientsRepository.find();
+      return await this.clientRepository.find();
     } catch (error) {
       throw new InternalServerErrorException(
         'Error listing clients: ' + error.message,
@@ -47,7 +47,7 @@ export class ClientsService {
 
   async getClient(id: number) {
     try {
-      const client = await this.clientsRepository.findOne({ where: { id } });
+      const client = await this.clientRepository.findOne({ where: { id } });
       if (!client) {
         throw new NotFoundException('Client not found');
       }
@@ -62,12 +62,16 @@ export class ClientsService {
     }
   }
 
+  async getClientByCpf(cpf: string): Promise<Client | undefined> {
+    return await this.clientRepository.findOne({ where: { cpf } });
+  }
+
   async updateClient(
     id: number,
     clientData: RegisterClientDto,
   ): Promise<Client> {
     try {
-      const existingClient = await this.clientsRepository.findOne({
+      const existingClient = await this.clientRepository.findOne({
         where: { id },
       });
       if (!existingClient) {
@@ -75,7 +79,7 @@ export class ClientsService {
       }
 
       if (clientData.cpf && clientData.cpf !== existingClient.cpf) {
-        const existingClientByCpf = await this.clientsRepository.findOne({
+        const existingClientByCpf = await this.clientRepository.findOne({
           where: { cpf: clientData.cpf },
         });
         if (existingClientByCpf) {
@@ -84,7 +88,7 @@ export class ClientsService {
       }
 
       const updatedClient = { ...existingClient, ...clientData };
-      return await this.clientsRepository.save(updatedClient);
+      return await this.clientRepository.save(updatedClient);
     } catch (error) {
       if (
         error instanceof NotFoundException ||
@@ -100,7 +104,7 @@ export class ClientsService {
 
   async deleteClient(id: number): Promise<void> {
     try {
-      const result = await this.clientsRepository.delete(id);
+      const result = await this.clientRepository.delete(id);
       if (result.affected === 0) {
         throw new NotFoundException('Client not found');
       }
