@@ -13,10 +13,10 @@ import {
   ForbiddenException,
   Req,
   UseGuards,
+  Logger,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from '../entities/user.entity';
-import { LoginData } from './user.service';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { Request } from 'express';
 import { AuthMiddleware } from '../middleware/auth.middleware';
@@ -25,9 +25,16 @@ interface CustomRequest extends Request {
   user?: User;
 }
 
+interface LoginData {
+  email: string;
+  password: string;
+}
+
 @Controller('user')
 @UseGuards(AuthMiddleware)
 export class UserController {
+  private readonly logger = new Logger(UserController.name);
+
   constructor(private readonly userService: UserService) {}
 
   @Post('login')
@@ -54,8 +61,22 @@ export class UserController {
     }
   }
 
+  @UseGuards(AuthMiddleware)
   @Post('register')
-  async registerUser(@Body() userData: RegisterUserDto) {
+  async registerUser(
+    @Body() userData: RegisterUserDto,
+    @Req() req: CustomRequest,
+  ) {
+    const currentUser = req.user as User;
+    if (!currentUser) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+    if (!currentUser.role) {
+      throw new UnauthorizedException('User role not found');
+    }
+    if (currentUser.role !== 'admin') {
+      throw new ForbiddenException('Only admins can create new users');
+    }
     if (!userData.username || !userData.password || !userData.email) {
       throw new BadRequestException(
         'Missing required fields: username, password, email',
@@ -64,6 +85,7 @@ export class UserController {
     try {
       return await this.userService.registerUser(userData);
     } catch (error) {
+      this.logger.error('Error registering user', error.stack);
       if (error instanceof BadRequestException) {
         throw new BadRequestException('User already exists');
       }
@@ -71,8 +93,16 @@ export class UserController {
     }
   }
 
+  @UseGuards(AuthMiddleware)
   @Get()
-  async listUsers() {
+  async listUsers(@Req() req: CustomRequest) {
+    const currentUser = req.user as User;
+    if (!currentUser || !currentUser.role) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+    if (currentUser.role !== 'admin') {
+      throw new ForbiddenException('Only admins can list all users');
+    }
     try {
       return await this.userService.listUsers();
     } catch (error) {
@@ -80,8 +110,16 @@ export class UserController {
     }
   }
 
+  @UseGuards(AuthMiddleware)
   @Get(':id')
-  async getUser(@Param('id') id: number) {
+  async getUser(@Param('id') id: number, @Req() req: CustomRequest) {
+    const currentUser = req.user as User;
+    if (!currentUser || !currentUser.role) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+    if (currentUser.role !== 'admin' && currentUser.id !== id) {
+      throw new ForbiddenException('You can only access your own data');
+    }
     try {
       const user = await this.userService.getUser(id);
       if (!user) {
@@ -96,8 +134,16 @@ export class UserController {
     }
   }
 
+  @UseGuards(AuthMiddleware)
   @Put()
-  async updateUser(@Body() userData: Partial<User>) {
+  async updateUser(@Body() userData: Partial<User>, @Req() req: CustomRequest) {
+    const currentUser = req.user as User;
+    if (!currentUser || !currentUser.role) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+    if (currentUser.role !== 'admin' && currentUser.email !== userData.email) {
+      throw new ForbiddenException('You can only update your own data');
+    }
     if (!userData.email) {
       throw new BadRequestException('Email is required');
     }
@@ -123,6 +169,9 @@ export class UserController {
     }
     try {
       const currentUser = req.user as User;
+      if (!currentUser || !currentUser.role) {
+        throw new UnauthorizedException('User not authenticated');
+      }
       const result = await this.userService.deleteUserByEmail(
         email,
         currentUser,

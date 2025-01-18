@@ -102,6 +102,14 @@ export class UserService {
     }
   }
 
+  async getUserById(id: number): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
   async updateUser(userData: Partial<User>) {
     if (!userData.email) {
       throw new BadRequestException('Email is required');
@@ -132,20 +140,6 @@ export class UserService {
       }
       throw new InternalServerErrorException(
         'Error updating user: ' + error.message,
-      );
-    }
-  }
-
-  async deleteUser(id: number, currentUser: User) {
-    if (currentUser.role !== 'admin') {
-      throw new ForbiddenException('Only admins can delete users');
-    }
-
-    try {
-      return await this.usersRepository.delete(id);
-    } catch (error) {
-      throw new InternalServerErrorException(
-        'Error deleting user: ' + error.message,
       );
     }
   }
