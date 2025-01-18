@@ -10,13 +10,23 @@ import {
   NotFoundException,
   InternalServerErrorException,
   UnauthorizedException,
+  ForbiddenException,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from '../entities/user.entity';
 import { LoginData } from './user.service';
 import { RegisterUserDto } from './dto/register-user.dto';
+import { Request } from 'express';
+import { AuthMiddleware } from '../middleware/auth.middleware';
+
+interface CustomRequest extends Request {
+  user?: User;
+}
 
 @Controller('user')
+@UseGuards(AuthMiddleware)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
@@ -103,9 +113,10 @@ export class UserController {
   }
 
   @Delete(':id')
-  async deleteUser(@Param('id') id: number) {
+  async deleteUser(@Param('id') id: number, @Req() req: CustomRequest) {
     try {
-      const result = await this.userService.deleteUser(id);
+      const currentUser = req.user as User;
+      const result = await this.userService.deleteUser(id, currentUser);
       if (result.affected === 0) {
         throw new NotFoundException('User not found');
       }
@@ -113,6 +124,9 @@ export class UserController {
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw new NotFoundException('User not found');
+      }
+      if (error instanceof ForbiddenException) {
+        throw new ForbiddenException('Only admins can delete users');
       }
       throw new InternalServerErrorException('Error deleting user', error);
     }
