@@ -17,7 +17,8 @@ logs:
 restart:
 	@mkdir -p pgdata
 	docker-compose down
-	docker-compose up -d --build
+	docker-compose build --no-cache
+	docker-compose up -d
 	docker-compose logs -f app
 
 start:
@@ -28,6 +29,15 @@ start-dev:
 
 start-prod:
 	yarn start:prod
+
+migration-generate:
+	yarn migration:generate $(name)
+
+migration-run:
+	yarn migration:run
+
+migration-revert:
+	yarn migration:revert
 
 test:
 	yarn test
