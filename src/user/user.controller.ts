@@ -42,8 +42,6 @@ export class LoginDataDto {
 
 @ApiTags('user')
 @Controller('user')
-@UseGuards(AuthMiddleware)
-@ApiBearerAuth()
 export class UserController {
   private readonly logger = new Logger(UserController.name);
 
@@ -80,7 +78,9 @@ export class UserController {
   }
 
   @Post('register')
-  @ApiOperation({ summary: 'Register a new user' })
+  @UseGuards(AuthMiddleware)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Register a new user (admin only)' })
   @ApiBody({ type: RegisterUserDto })
   @ApiResponse({ status: 201, description: 'User registered successfully.' })
   @ApiResponse({ status: 400, description: 'Bad Request.' })
@@ -122,7 +122,9 @@ export class UserController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all users' })
+  @UseGuards(AuthMiddleware)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all users (admin only)' })
   @ApiResponse({ status: 200, description: 'Users retrieved successfully.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
@@ -143,7 +145,9 @@ export class UserController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a user by ID' })
+  @UseGuards(AuthMiddleware)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get a user by ID (self or admin)' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: 200, description: 'User retrieved successfully.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -173,7 +177,9 @@ export class UserController {
   }
 
   @Put()
-  @ApiOperation({ summary: 'Update a user' })
+  @UseGuards(AuthMiddleware)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update a user (self or admin)' })
   @ApiBody({ type: RegisterUserDto })
   @ApiResponse({ status: 200, description: 'User updated successfully.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -203,7 +209,9 @@ export class UserController {
   }
 
   @Delete()
-  @ApiOperation({ summary: 'Delete a user' })
+  @UseGuards(AuthMiddleware)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete a user (admin only)' })
   @ApiBody({ type: RegisterUserDto })
   @ApiResponse({ status: 200, description: 'User deleted successfully.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
