@@ -3,6 +3,6 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class AppService {
   getHello(): string {
-    return 'Eteg API';
+    return `${process.env.COMPANY_NAME} API`;
   }
 }

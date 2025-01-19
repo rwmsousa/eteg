@@ -1,7 +1,7 @@
 import { DocumentBuilder } from '@nestjs/swagger';
 
 export const swaggerDocumentOptions = new DocumentBuilder()
-  .setTitle('Eteg API')
+  .setTitle(`${process.env.COMPANY_NAME} API`)
   .setDescription('Test Technique Eteg')
   .setVersion('1.0')
   .addTag('nestjs')

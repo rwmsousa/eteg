@@ -14,7 +14,7 @@ describe('AppService', () => {
 
   describe('getHello', () => {
     it('should return "Eteg API"', () => {
-      expect(appService.getHello()).toBe('Eteg API');
+      expect(appService.getHello()).toBe(`${process.env.COMPANY_NAME} API`);
     });
   });
 });

@@ -17,7 +17,7 @@ async function bootstrap() {
   await seeder.seed();
 
   const config = new DocumentBuilder()
-    .setTitle('Eteg API')
+    .setTitle(`${process.env.COMPANY_NAME} API`)
     .setDescription('Test Technique Eteg')
     .setVersion('1.0')
     .addBearerAuth()
