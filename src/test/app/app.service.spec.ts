@@ -13,8 +13,8 @@ describe('AppService', () => {
   });
 
   describe('getHello', () => {
-    it('should return "Hello World!"', () => {
-      expect(appService.getHello()).toBe('Hello World!');
+    it('should return "Eteg API"', () => {
+      expect(appService.getHello()).toBe('Eteg API');
     });
   });
 });
