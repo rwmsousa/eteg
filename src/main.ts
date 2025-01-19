@@ -18,7 +18,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle(`${process.env.COMPANY_NAME} API`)
-    .setDescription('Test Technique Eteg')
+    .setDescription('Rest API with NestJS, Typeorm and Postgres')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
