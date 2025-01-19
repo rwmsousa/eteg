@@ -79,7 +79,7 @@ export default class SeederService {
         cpf: '33333333333',
         email: 'client3@example.com',
         color: 'blue',
-        annotations: 'annotation3',
+        annotations: '',
       },
     ];
 
