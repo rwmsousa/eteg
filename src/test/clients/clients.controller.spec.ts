@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { RegisterClientDto } from '../../clients/dto/register-client.dto';
 import { UserModule } from '../../user/user.module';
+import { registerClientSchema } from '../../clients/dto/register-client.schema';
 
 describe('ClientsController', () => {
   let controller: ClientsController;
@@ -76,6 +77,21 @@ describe('ClientsController', () => {
       await expect(
         controller.registerClient(clientData as RegisterClientDto),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if schema validation fails', async () => {
+      const clientData: RegisterClientDto = {
+        name: 'Jo',
+        cpf: '123',
+        email: 'invalid-email',
+        color: 'bl',
+        annotations: '',
+      };
+      const { error } = registerClientSchema.validate(clientData);
+      expect(error).toBeDefined();
+      await expect(controller.registerClient(clientData)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw InternalServerErrorException if there is a database error', async () => {

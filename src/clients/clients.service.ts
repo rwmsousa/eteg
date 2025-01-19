@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Client } from '../entities/client.entity';
 import { RegisterClientDto } from './dto/register-client.dto';
+import { registerClientSchema } from './dto/register-client.schema';
 
 @Injectable()
 export class ClientsService {
@@ -17,6 +18,17 @@ export class ClientsService {
   ) {}
 
   async registerClient(clientData: RegisterClientDto) {
+    const { error } = registerClientSchema.validate(clientData);
+    if (error) {
+      throw new BadRequestException(error.details[0].message);
+    }
+
+    if (!clientData.cpf || !clientData.name || !clientData.email) {
+      throw new BadRequestException(
+        'Missing required fields: cpf, name, email',
+      );
+    }
+
     try {
       const existingClientByCpf = await this.clientRepository.findOne({
         where: { cpf: clientData.cpf },

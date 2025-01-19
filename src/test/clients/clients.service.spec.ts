@@ -9,6 +9,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { RegisterClientDto } from '../../clients/dto/register-client.dto';
+import { registerClientSchema } from '../../clients/dto/register-client.schema';
 
 describe('ClientsService', () => {
   let service: ClientsService;
@@ -63,6 +64,34 @@ describe('ClientsService', () => {
       };
       jest.spyOn(repository, 'findOne').mockResolvedValue(new Client());
 
+      await expect(service.registerClient(clientData)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException if required fields are missing', async () => {
+      const clientData: RegisterClientDto = {
+        name: '',
+        cpf: '',
+        email: '',
+        color: '',
+        annotations: '',
+      };
+      await expect(service.registerClient(clientData)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException if schema validation fails', async () => {
+      const clientData: RegisterClientDto = {
+        name: 'Jo',
+        cpf: '123',
+        email: 'invalid-email',
+        color: 'bl',
+        annotations: '',
+      };
+      const { error } = registerClientSchema.validate(clientData);
+      expect(error).toBeDefined();
       await expect(service.registerClient(clientData)).rejects.toThrow(
         BadRequestException,
       );
