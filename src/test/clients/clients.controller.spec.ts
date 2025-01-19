@@ -8,6 +8,7 @@ import {
   BadRequestException,
   InternalServerErrorException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { RegisterClientDto } from '../../clients/dto/register-client.dto';
 import { UserModule } from '../../user/user.module';
@@ -241,6 +242,16 @@ describe('ClientsController', () => {
         .mockRejectedValue(new Error('Unexpected error'));
       await expect(controller.deleteClient(1)).rejects.toThrow(
         InternalServerErrorException,
+      );
+    });
+
+    it('should throw ForbiddenException if current user is not admin', async () => {
+      jest
+        .spyOn(service, 'deleteClient')
+        .mockRejectedValue(new ForbiddenException());
+
+      await expect(controller.deleteClient(1)).rejects.toThrow(
+        ForbiddenException,
       );
     });
   });

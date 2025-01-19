@@ -11,6 +11,7 @@ import {
   InternalServerErrorException,
   UseGuards,
   Logger,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import { RegisterClientDto } from './dto/register-client.dto';
@@ -71,8 +72,10 @@ export class ClientsController {
   @UseGuards(AuthMiddleware)
   @ApiBearerAuth()
   @Get()
-  @ApiOperation({ summary: 'Get all clients' })
+  @ApiOperation({ summary: 'Get all clients (admin only)' })
   @ApiResponse({ status: 200, description: 'Clients retrieved successfully.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 500, description: 'Internal Server Error.' })
   async listClients() {
     try {
@@ -86,9 +89,11 @@ export class ClientsController {
   @UseGuards(AuthMiddleware)
   @ApiBearerAuth()
   @Get(':id')
-  @ApiOperation({ summary: 'Get a client by ID' })
+  @ApiOperation({ summary: 'Get a client by ID (admin only)' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: 200, description: 'Client retrieved successfully.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Client not found.' })
   @ApiResponse({ status: 500, description: 'Internal Server Error.' })
   async getClient(@Param('id') id: number) {
@@ -110,12 +115,13 @@ export class ClientsController {
   @UseGuards(AuthMiddleware)
   @ApiBearerAuth()
   @Put(':id')
-  @ApiOperation({ summary: 'Update a client by ID' })
+  @ApiOperation({ summary: 'Update a client by ID (admin only)' })
   @ApiParam({ name: 'id', type: Number })
   @ApiBody({ type: RegisterClientDto })
   @ApiResponse({ status: 200, description: 'Client updated successfully.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Client not found.' })
-  @ApiResponse({ status: 400, description: 'Bad Request.' })
   @ApiResponse({ status: 500, description: 'Internal Server Error.' })
   async updateClient(
     @Param('id') id: number,
@@ -138,9 +144,11 @@ export class ClientsController {
   @UseGuards(AuthMiddleware)
   @ApiBearerAuth()
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete a client by ID' })
+  @ApiOperation({ summary: 'Delete a client by ID (admin only)' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: 200, description: 'Client deleted successfully.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Client not found.' })
   @ApiResponse({ status: 500, description: 'Internal Server Error.' })
   async deleteClient(@Param('id') id: number) {
@@ -150,6 +158,9 @@ export class ClientsController {
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw new NotFoundException('Client not found');
+      }
+      if (error instanceof ForbiddenException) {
+        throw new ForbiddenException('Only admins can delete clients');
       }
       this.logger.error('Error deleting client', error.stack);
       throw new InternalServerErrorException('Error deleting client', error);
