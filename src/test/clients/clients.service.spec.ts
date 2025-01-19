@@ -95,7 +95,7 @@ describe('ClientsService', () => {
           cpf: '12345678901',
           email: 'john@example.com',
           color: 'blue',
-          annotations: '',
+          annotations: 'Some annotations',
         },
       ];
       jest.spyOn(repository, 'find').mockResolvedValue(result);
@@ -122,7 +122,7 @@ describe('ClientsService', () => {
         cpf: '12345678901',
         email: 'john@example.com',
         color: 'blue',
-        annotations: '',
+        annotations: 'Some annotations',
       };
       jest.spyOn(repository, 'findOne').mockResolvedValue(result);
 
@@ -154,7 +154,7 @@ describe('ClientsService', () => {
         cpf: '12345678901',
         email: 'john@example.com',
         color: 'blue',
-        annotations: '',
+        annotations: 'Some annotations',
       };
       jest.spyOn(repository, 'findOne').mockResolvedValue(result);
 

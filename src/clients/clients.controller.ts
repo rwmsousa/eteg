@@ -15,6 +15,7 @@ import {
 import { ClientsService } from './clients.service';
 import { RegisterClientDto } from './dto/register-client.dto';
 import { AuthMiddleware } from '../middleware/auth.middleware';
+import { registerClientSchema } from './dto/register-client.schema';
 
 @Controller('clients')
 export class ClientsController {
@@ -24,6 +25,10 @@ export class ClientsController {
 
   @Post()
   async registerClient(@Body() clientData: RegisterClientDto) {
+    const { error } = registerClientSchema.validate(clientData);
+    if (error) {
+      throw new BadRequestException(error.details[0].message);
+    }
     if (!clientData.cpf || !clientData.name || !clientData.email) {
       throw new BadRequestException(
         'Missing required fields: cpf, name, email',
