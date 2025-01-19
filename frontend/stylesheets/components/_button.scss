@@ -1,0 +1,29 @@
+@import '../base/colors';
+
+// Botões
+.button {
+    display: inline-block;
+    padding: 0.625rem 1.25rem; // 10px 20px
+    font-size: 1rem; // 16px
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    border: 0.0625rem solid transparent; // 1px
+    border-radius: 0.25rem; // 4px
+    transition: all 0.3s ease;
+}
+
+.button.primary {
+    background-color: $color-button;
+    color: #fff;
+}
+
+.button.secondary {
+    background-color: $color-highlight;
+    color: rgba(0, 0, 0, 0.692);
+}
+
+.button:hover {
+    opacity: 0.8;
+    background-color: darken($color-button, 15%);
+}
