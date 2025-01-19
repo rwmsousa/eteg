@@ -21,24 +21,41 @@ import { RegisterUserDto } from './dto/register-user.dto';
 import { Request } from 'express';
 import { AuthMiddleware } from '../middleware/auth.middleware';
 import { registerUserSchema } from './dto/register-user.schema';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiBody,
+  ApiBearerAuth,
+  ApiResponse,
+} from '@nestjs/swagger';
+import { LoginData } from './dto/login-data.dto';
 
 interface CustomRequest extends Request {
   user?: User;
 }
 
-interface LoginData {
+export class LoginDataDto {
   email: string;
   password: string;
 }
 
+@ApiTags('user')
 @Controller('user')
 @UseGuards(AuthMiddleware)
+@ApiBearerAuth()
 export class UserController {
   private readonly logger = new Logger(UserController.name);
 
   constructor(private readonly userService: UserService) {}
 
   @Post('login')
+  @ApiOperation({ summary: 'User login' })
+  @ApiBody({ type: LoginData })
+  @ApiResponse({ status: 200, description: 'User logged in successfully.' })
+  @ApiResponse({ status: 400, description: 'Bad Request.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error.' })
   async login(@Body() loginData: LoginData) {
     try {
       if (!loginData.email || !loginData.password) {
@@ -62,8 +79,14 @@ export class UserController {
     }
   }
 
-  @UseGuards(AuthMiddleware)
   @Post('register')
+  @ApiOperation({ summary: 'Register a new user' })
+  @ApiBody({ type: RegisterUserDto })
+  @ApiResponse({ status: 201, description: 'User registered successfully.' })
+  @ApiResponse({ status: 400, description: 'Bad Request.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error.' })
   async registerUser(
     @Body() userData: RegisterUserDto,
     @Req() req: CustomRequest,
@@ -98,8 +121,12 @@ export class UserController {
     }
   }
 
-  @UseGuards(AuthMiddleware)
   @Get()
+  @ApiOperation({ summary: 'Get all users' })
+  @ApiResponse({ status: 200, description: 'Users retrieved successfully.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error.' })
   async listUsers(@Req() req: CustomRequest) {
     const currentUser = req.user as User;
     if (!currentUser || !currentUser.role) {
@@ -115,8 +142,14 @@ export class UserController {
     }
   }
 
-  @UseGuards(AuthMiddleware)
   @Get(':id')
+  @ApiOperation({ summary: 'Get a user by ID' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: 200, description: 'User retrieved successfully.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error.' })
   async getUser(@Param('id') id: number, @Req() req: CustomRequest) {
     const currentUser = req.user as User;
     if (!currentUser || !currentUser.role) {
@@ -139,8 +172,14 @@ export class UserController {
     }
   }
 
-  @UseGuards(AuthMiddleware)
   @Put()
+  @ApiOperation({ summary: 'Update a user' })
+  @ApiBody({ type: RegisterUserDto })
+  @ApiResponse({ status: 200, description: 'User updated successfully.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error.' })
   async updateUser(@Body() userData: Partial<User>, @Req() req: CustomRequest) {
     const currentUser = req.user as User;
     if (!currentUser || !currentUser.role) {
@@ -164,6 +203,13 @@ export class UserController {
   }
 
   @Delete()
+  @ApiOperation({ summary: 'Delete a user' })
+  @ApiBody({ type: RegisterUserDto })
+  @ApiResponse({ status: 200, description: 'User deleted successfully.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error.' })
   async deleteUser(
     @Body() body: { email: string; [key: string]: any },
     @Req() req: CustomRequest,

@@ -16,7 +16,16 @@ import { ClientsService } from './clients.service';
 import { RegisterClientDto } from './dto/register-client.dto';
 import { AuthMiddleware } from '../middleware/auth.middleware';
 import { registerClientSchema } from './dto/register-client.schema';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiBody,
+  ApiBearerAuth,
+  ApiResponse,
+} from '@nestjs/swagger';
 
+@ApiTags('clients')
 @Controller('clients')
 export class ClientsController {
   private readonly logger = new Logger(ClientsController.name);
@@ -24,6 +33,11 @@ export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
 
   @Post()
+  @ApiOperation({ summary: 'Create a new client' })
+  @ApiBody({ type: RegisterClientDto })
+  @ApiResponse({ status: 201, description: 'Client created successfully.' })
+  @ApiResponse({ status: 400, description: 'Bad Request.' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error.' })
   async registerClient(@Body() clientData: RegisterClientDto) {
     const { error } = registerClientSchema.validate(clientData);
     if (error) {
@@ -55,7 +69,11 @@ export class ClientsController {
   }
 
   @UseGuards(AuthMiddleware)
+  @ApiBearerAuth()
   @Get()
+  @ApiOperation({ summary: 'Get all clients' })
+  @ApiResponse({ status: 200, description: 'Clients retrieved successfully.' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error.' })
   async listClients() {
     try {
       return await this.clientsService.listClients();
@@ -66,7 +84,13 @@ export class ClientsController {
   }
 
   @UseGuards(AuthMiddleware)
+  @ApiBearerAuth()
   @Get(':id')
+  @ApiOperation({ summary: 'Get a client by ID' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: 200, description: 'Client retrieved successfully.' })
+  @ApiResponse({ status: 404, description: 'Client not found.' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error.' })
   async getClient(@Param('id') id: number) {
     try {
       const client = await this.clientsService.getClient(id);
@@ -84,7 +108,15 @@ export class ClientsController {
   }
 
   @UseGuards(AuthMiddleware)
+  @ApiBearerAuth()
   @Put(':id')
+  @ApiOperation({ summary: 'Update a client by ID' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiBody({ type: RegisterClientDto })
+  @ApiResponse({ status: 200, description: 'Client updated successfully.' })
+  @ApiResponse({ status: 404, description: 'Client not found.' })
+  @ApiResponse({ status: 400, description: 'Bad Request.' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error.' })
   async updateClient(
     @Param('id') id: number,
     @Body() clientData: RegisterClientDto,
@@ -104,7 +136,13 @@ export class ClientsController {
   }
 
   @UseGuards(AuthMiddleware)
+  @ApiBearerAuth()
   @Delete(':id')
+  @ApiOperation({ summary: 'Delete a client by ID' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: 200, description: 'Client deleted successfully.' })
+  @ApiResponse({ status: 404, description: 'Client not found.' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error.' })
   async deleteClient(@Param('id') id: number) {
     try {
       await this.clientsService.deleteClient(id);
