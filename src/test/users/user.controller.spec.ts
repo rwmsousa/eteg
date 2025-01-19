@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { RegisterUserDto } from '../../user/dto/register-user.dto';
 import { LoginData } from '../../user/dto/login-data.dto';
+import { registerUserSchema } from '../../user/dto/register-user.schema';
 
 describe('UserController', () => {
   let controller: UserController;
@@ -115,6 +116,21 @@ describe('UserController', () => {
       jest
         .spyOn(service, 'registerUser')
         .mockRejectedValue(new BadRequestException('User already exists'));
+
+      const req = { user: { role: 'admin' } } as any;
+      await expect(controller.registerUser(userData, req)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException if schema validation fails', async () => {
+      const userData: RegisterUserDto = {
+        username: 'jo',
+        password: '123',
+        email: 'invalid-email',
+      };
+      const { error } = registerUserSchema.validate(userData);
+      expect(error).toBeDefined();
 
       const req = { user: { role: 'admin' } } as any;
       await expect(controller.registerUser(userData, req)).rejects.toThrow(

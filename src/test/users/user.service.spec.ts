@@ -4,6 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../../entities/user.entity';
 import { Repository } from 'typeorm';
 import { RegisterUserDto } from '../../user/dto/register-user.dto';
+import { registerUserSchema } from '../../user/dto/register-user.schema';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import {
@@ -71,7 +72,7 @@ describe('UserService', () => {
 
       const userData: RegisterUserDto = {
         username: 'test',
-        password: 'test',
+        password: 'test123',
         email: 'test@example.com',
       };
       expect(await service.registerUser(userData)).toBe(user);
@@ -83,7 +84,7 @@ describe('UserService', () => {
 
       const userData: RegisterUserDto = {
         username: 'test',
-        password: 'test',
+        password: 'test123',
         email: 'test@example.com',
       };
       await expect(service.registerUser(userData)).rejects.toThrow(
@@ -97,6 +98,19 @@ describe('UserService', () => {
         password: '',
         email: '',
       };
+      await expect(service.registerUser(userData)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException if schema validation fails', async () => {
+      const userData: RegisterUserDto = {
+        username: 'te',
+        password: '123',
+        email: 'invalid-email',
+      };
+      const { error } = registerUserSchema.validate(userData);
+      expect(error).toBeDefined();
       await expect(service.registerUser(userData)).rejects.toThrow(
         BadRequestException,
       );
