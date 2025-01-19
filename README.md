@@ -1,53 +1,53 @@
 # REST API
 
-Este é um projeto de API desenvolvido com NestJS para um processo seletivo de desenvolvedor fullstack. A API fornece funcionalidades para gerenciar usuários e clientes.
+This is an API project developed with NestJS and provides functionalities to manage users and clients.
 
 ## Features
 
-- Autenticação e autorização de usuários
-- CRUD de usuários
-- CRUD de clientes
-- Documentação da API com Swagger
-- Seed de dados iniciais
+- User authentication and authorization
+- User CRUD
+- Client CRUD
+- API documentation with Swagger
+- Initial data seeding
 
-## Funcionalidades
+## Functionalities
 
-### Usuários
+### Users
 
-- Registro de novos usuários (apenas para administradores)
-- Login de usuários (qualquer usuário)
-- Listagem de todos os usuários (apenas para administradores)
-- Obtenção de detalhes de um usuário por ID (o próprio usuário autenticado ou administrador)
-- Atualização de dados de um usuário (o próprio usuário autenticado ou administrador)
-- Exclusão de um usuário (apenas para administrador)
+- Register new users (admin only)
+- User login (any user)
+- List all users (admin only)
+- Get user details by ID (authenticated user or admin)
+- Update user data (authenticated user or admin)
+- Delete a user (admin only)
 
-### Clientes
+### Clients
 
-- Registro de novos clientes (qualquer usuário, sem a necessidade de autenticação)
-- Listagem de todos os clientes (apenas para administrador)
-- Obtenção de detalhes de um cliente por ID (apenas para administrador)
-- Atualização de dados de um cliente (apenas para administrador)
-- Exclusão de um cliente (apenas para administrador)
+- Register new clients (any user, no authentication required)
+- List all clients (admin only)
+- Get client details by ID (admin only)
+- Update client data (admin only)
+- Delete a client (admin only)
 
-## Rotas
+## Routes
 
-A documentação completa das rotas pode ser acessada via Swagger em `http://localhost:3001/api`.
+The complete route documentation can be accessed via Swagger at `http://localhost:3001/api`.
 
-## Instalação
+## Installation
 
-1. Clone o repositório:
+1. Clone the repository:
    ```shell
-   git clone <URL_DO_REPOSITORIO>
-   cd <NOME_DO_REPOSITORIO>
+   git clone git@github.com:rwmsousa/boilerplate-nest.git
+   cd boilerplate-nest
    ```
 
-2. Instale as dependências:
+2. Install the dependencies:
    ```shell
    yarn install
    ```
 
-3. Configure as variáveis de ambiente:
-   Crie um arquivo `.env` na raiz do projeto e adicione as seguintes variáveis:
+3. Configure the environment variables:
+   Create a `.env` file at the root of the project and add the following variables:
    ```env
    NODE_ENV=
    PORT=
@@ -66,63 +66,83 @@ A documentação completa das rotas pode ser acessada via Swagger em `http://loc
    DATABASE_SYNCHRONIZE=
    ```
 
-4. Execute as migrações do banco de dados:
+4. Run the database migrations:
    ```shell
    yarn migration:run
    ```
 
-5. Execute o seed de dados iniciais:
+5. Run the initial data seed:
    ```shell
    yarn start:dev
    ```
 
-## Uso
+## Usage
 
-1. Inicie o servidor:
+1. Start the server:
    ```shell
    yarn start:dev
    ```
 
-2. Acesse a documentação da API no navegador:
+2. Build the project:
+   ```shell
+   yarn build
+   ```
+
+3. Access the API documentation in the browser:
    ```
    http://localhost:3001/api
    ```
 
-3. Utilize as rotas da API conforme descrito na seção de Rotas.
+3. Use the API routes as described in the Routes section.
 
-## Testes
+## Tests
 
-Para executar os testes, utilize o comando:
+To run the tests, use the command:
 ```shell
 yarn test
 ```
 
 ## Docker
 
-Para executar o projeto utilizando Docker, siga os passos abaixo:
+To run the project using Docker, follow the steps below:
 
-1. Construa a imagem Docker:
+1. Build the Docker image:
    ```shell
    make build
    ```
 
-2. Execute o container:
+2. Run the container:
    ```shell
-   make run
+   make up
    ```
 
-## Contribuição
+3. To stop the container, use the command:
+   ```shell
+   make down
+   ```
 
-Contribuições são bem-vindas! Sinta-se à vontade para abrir issues e pull requests.
+4. To run tests inside the container, use the command:
+   ```shell
+   make test
+   ```
+   
+5. To run the database migrations inside the container, use the command:
+   ```shell
+   make migration
+   ```
 
-## Licença
+## Contribution
 
-Este projeto está licenciado sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
+Contributions are welcome! Feel free to open issues and pull requests.
+
+## License
+
+This project is licensed under the MIT license. See the LICENSE file for more details.
 
 ```
 MIT License
 
-Copyright (c) 2023 <Seu Nome>
+Copyright (c) 2023 <Your Name>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
