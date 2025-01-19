@@ -20,6 +20,7 @@ import { User } from '../entities/user.entity';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { Request } from 'express';
 import { AuthMiddleware } from '../middleware/auth.middleware';
+import { registerUserSchema } from './dto/register-user.schema';
 
 interface CustomRequest extends Request {
   user?: User;
@@ -67,6 +68,10 @@ export class UserController {
     @Body() userData: RegisterUserDto,
     @Req() req: CustomRequest,
   ) {
+    const { error } = registerUserSchema.validate(userData);
+    if (error) {
+      throw new BadRequestException(error.details[0].message);
+    }
     const currentUser = req.user as User;
     if (!currentUser) {
       throw new UnauthorizedException('User not authenticated');
