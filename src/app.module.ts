@@ -5,7 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ClientsModule } from './clients/clients.module';
 import { UserModule } from './user/user.module';
-import {SeederModule} from './seeder/seeder.module';
+import { SeederModule } from './seeder/seeder.module';
 import { AuthMiddleware } from './middleware/auth.middleware';
 import * as dotenv from 'dotenv';
 import { UserService } from './user/user.service';
