@@ -17,23 +17,9 @@ export class RegisterUserDto {
   email: string;
 
   @ApiProperty({
-    example: 'color',
-    description: 'The color of the user',
-    required: false,
-  })
-  color?: string;
-
-  @ApiProperty({
     example: 'user',
     description: 'The role of the user',
     required: false,
   })
   role?: string;
-
-  @ApiProperty({
-    example: 'annotations',
-    description: 'The annotations of the user',
-    required: false,
-  })
-  annotations?: string;
 }

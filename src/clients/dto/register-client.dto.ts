@@ -13,6 +13,15 @@ export class RegisterClientDto {
   })
   email: string;
 
+  @ApiProperty({
+    example: 'blue',
+    description: 'The favorite color of the client',
+  })
   color: string;
+
+  @ApiProperty({
+    example: 'Some annotations',
+    description: 'Additional annotations',
+  })
   annotations: string;
 }
