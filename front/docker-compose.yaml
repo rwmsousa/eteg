@@ -1,0 +1,14 @@
+services:
+  front:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: front-next-sass
+    image: front-next-sass
+    restart: always
+    command: yarn dev
+    volumes:
+      - ./:/front-next-sass
+      - /front-next-sass/node_modules
+    ports:
+      - '3000:3000'

@@ -1,0 +1,9 @@
+build
+dist
+coverage
+.husky
+.next
+node_modules
+*.html
+.gitignore
+.prettierignore

@@ -1,0 +1,11 @@
+package-lock.json
+node_modules/
+coverage/
+npm-debug.log
+dist
+.git
+.next
+.next
+.env
+.eslintcache
+yarn.lock
