@@ -1,0 +1,64 @@
+services:
+  db:
+    container_name: ${DATABASE_NAME}
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+    ports:
+      - '5434:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  app:
+    container_name: ${DOCKER_IMAGE_NAME}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: yarn start:prod
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - PORT=${PORT}
+      - DATABASE_HOST=db
+      - DATABASE_PORT=${DATABASE_PORT}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_NAME=${DATABASE_NAME}
+      - DATABASE_SCHEMA=${DATABASE_SCHEMA}
+      - ADMIN_API_KEY=${ADMIN_API_KEY}
+      - DOCKER_IMAGE_NAME=${DOCKER_IMAGE_NAME}
+    ports:
+      - '3001:3001'
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - pgdata:/app/pgdata
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+volumes:
+  pgdata:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ${PWD}/pgdata
