@@ -1,0 +1,10 @@
+**/node_modules/*
+**/.next/*
+**/.husky/*
+**/.vscode/*
+dist/*
+build/*
+coverage/*
+**/*.d.ts
+/public/
+/types/
